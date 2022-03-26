@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text;
 using AvroCompiler.Core.Abstraction;
 using AvroCompiler.Core.Contants;
@@ -66,6 +67,8 @@ func ({toCamelCase(name)} {toPascalCase(name)}) Codec() (*goavro.Codec, error){{
     {
         return @"
 import (
+    ""encoding/base64""
+
 	""github.com/linkedin/goavro""
 )
         ";
@@ -73,14 +76,246 @@ import (
 
     public string GetMessage(string name, IReadOnlyDictionary<string, string> request, string response, object? options)
     {
+        if (request.Count == 1)
+        {
+            PropertyInfo[]? _options = options?.GetType().GetProperties();
+            StringBuilder output = new StringBuilder();
+            if (response != "null" && Enum.TryParse<AvroTypes>(response.ToUpper(), out AvroTypes responseType))
+            {
+                return "";
+            }
+            string natsMessage = "";
+            string type = request[request.Keys.FirstOrDefault()!];
+            if (!Enum.TryParse<AvroTypes>(type.ToUpper(), out AvroTypes avroType))
+            {
+                object? error = _options?.FirstOrDefault(x => x.Name == "Error")?.GetValue(options);
 
-        return @$"
-func ${toPascalCase(name)}() {{
-    
-}}
-        ";
+                if (response != "null")
+                {
+                    if (error == null)
+                    {
+                        output.Append(@$"type {toPascalCase(name)} func({toCamelCase(type)} {toPascalCase(type)}) {response}");
+
+                    }
+                    else
+                    {
+                        output.Append(@$"type {toPascalCase(name)} func({toCamelCase(type)} {toPascalCase(type)}) ({response}, *{error})");
+                    }
+                }
+                else
+                {
+                    output.Append(@$"type {toPascalCase(name)} func({toCamelCase(type)} {toPascalCase(type)}) *{error}");
+                }
+                natsMessage = getNatsListener(name, type, response, "", error != null ? (string)error : null);
+                output.AppendLine();
+                output.AppendLine(natsMessage);
+            }
+            return output.ToString();
+        }
+        else if (request.Count == 0)
+        {
+            PropertyInfo[]? _options = options?.GetType().GetProperties();
+            StringBuilder output = new StringBuilder();
+            if (response != "null" && Enum.TryParse<AvroTypes>(response.ToUpper(), out AvroTypes responseType))
+            {
+                return "";
+            }
+            string natsMessage = "";
+            object? error = _options?.FirstOrDefault(x => x.Name == "Error")?.GetValue(options);
+
+                if (response != "null")
+                {
+                    if (error == null)
+                    {
+                        output.Append(@$"type {toPascalCase(name)} func() {response}");
+
+                    }
+                    else
+                    {
+                        output.Append(@$"type {toPascalCase(name)} func() ({response}, *{error})");
+                    }
+                }
+                else
+                {
+                    output.Append(@$"type {toPascalCase(name)} func() *{error}");
+                }
+                natsMessage = getNatsListener(name, null, response, "", error != null ? (string)error : null);
+                output.AppendLine();
+                output.AppendLine(natsMessage);
+            return output.ToString();
+        }
+        return "";
     }
+    private string getNatsListener(string name, string? request, string response, string @namespace, string? error)
+    {
+        string namePascalCase = toPascalCase(name);
+        string nameCamelCase = toCamelCase(name);
+        string mainTemplate = @$"
+    $requestCodec
+    $responseCodec
+    $errorCodec
+    $subscription
+            ";
+        string subscriptionTemplate =
+@$"conn.Subscribe(""{@namespace}"", func(msg* nats.Msg) {{ 
+        $handler
+    }})
+            ";
+        string? requestCodecTemplate = null;
+        string? responseCodecTemplate = null;
+        string? errorCodecTemplate = null;
+        string? errorPascalCase = null;
+        string? requestPascalCase = null;
+        string? responsePascalCase = null;
+        string? requestCamelCase = null;
+        string handlerTemplate;
+        if (request != null)
+        {
+            requestPascalCase = toPascalCase(request);
+            requestCamelCase = toCamelCase(request);
+            requestCodecTemplate =
+@$"requestCodec, requestCodecError := {requestPascalCase}.Codec({requestPascalCase} {{}})
+    if requestCodecError != nil {{
+        panic(requestCodecError)
+    }}";
+        }
+        if (error != null)
+        {
+            errorPascalCase = toPascalCase(error);
+            errorCodecTemplate =
+$@"errorCodec, errorCodecError := {errorPascalCase}.Codec({errorPascalCase} {{}})
+    if errorCodecError != nil {{
+        panic(errorCodecError)
+    }}";
+        }
+        if (response != "null")
+        {
+            responsePascalCase = toPascalCase(response);
+            responseCodecTemplate =
+@$"responseCodec, responseCodedError := {responsePascalCase}.Codec({responsePascalCase} {{}})
+    if responseCodedError != nil {{
+        panic(responseCodedError)
+    }}";
+        }
+        if (request != null)
+        {
+            mainTemplate = mainTemplate.Replace("$requestCodec", requestCodecTemplate);
+            handlerTemplate =
+@$"message, messageError := requestCodec.NativeFromBinary(msg.Data);
+        if messageError != nil {{
+            msg.Term()
+        }} 
+        if messageValue, ok := message.({requestPascalCase}); ok {{
+            $handle
+        }} else {{
+            msg.Term()
+        }}";
+            mainTemplate =
+@$"func ListenTo{namePascalCase}(conn *nats.Conn, {nameCamelCase} {namePascalCase}) {{
+    {mainTemplate}
+}}";
+            if (response != "null")
+            {
+                mainTemplate = mainTemplate.Replace("$subscription", subscriptionTemplate);
+                mainTemplate = mainTemplate.Replace("$handler", handlerTemplate);
+                mainTemplate = mainTemplate.Replace("$responseCodec", responseCodecTemplate);
+                string responseTemplate;
+                if (error != null)
+                {
+                    mainTemplate = mainTemplate.Replace("$errorCodec", errorCodecTemplate);
+                    responseTemplate =
+             @$"if response, responseError := {nameCamelCase}(message); responseError == nil {{
+                if responseEncoded, err := responseCodec.BinaryFromNative(response); err == nil {{
+                    msg.Respond(responseEncoded)
+                }} else {{
+                    msg.Term()
+                }}
+            }} else {{
+                if errorEncoded, err := errorCodec.BinaryFromNative(responseError); err == nil {{
+                    msg.Respond(errorEncoded)
+                }} else {{
+                    msg.Term()
+                }}
+            }}";
 
+                }
+                else
+                {
+                    mainTemplate = mainTemplate.Replace("$errorCodec", "");
+                    responseTemplate =
+         @$"response := {nameCamelCase}(message);
+            if responseEncoded, err := responseCodec.BinaryFromNative(response); err == nil {{
+                msg.Respond(responseEncoded)
+            }} else {{
+                msg.Term()
+            }}";
+                }
+                mainTemplate = mainTemplate.Replace("$handle", responseTemplate);
+            }
+            else
+            {
+                mainTemplate = mainTemplate.Replace("$subscription", subscriptionTemplate);
+                mainTemplate = mainTemplate.Replace("$responseCodec", "");
+                handlerTemplate =
+         @$"message, messageError := requestCodec.NativeFromBinary(msg.Data);
+            if messageError != nil {{
+                msg.Term();
+            }} 
+            if messageValue, ok := message.({requestPascalCase}); ok {{
+                $handle
+            }} else {{
+                msg.Term()
+            }}";
+                mainTemplate = mainTemplate.Replace("$handler", handlerTemplate);
+                string handleTemplate;
+                if (error != null)
+                {
+                    mainTemplate = mainTemplate.Replace("$errorCodec", "");
+                    handleTemplate =
+          @$"if error := {nameCamelCase}(message); error == nil {{
+                msg.Ack()
+            }} else {{
+                msg.Term()
+            }}";
+                }
+                else
+                {
+                    mainTemplate = mainTemplate.Replace("$errorCodec", "");
+                    handleTemplate =
+         @$"response := {namePascalCase}(message)
+            msg.Ack()";
+                }
+                mainTemplate = mainTemplate.Replace("$handle", handleTemplate);
+            }
+        }
+        else
+        {
+            mainTemplate =
+@$"func ListenTo{namePascalCase}(conn *nats.Conn) {{
+    {mainTemplate}
+}}";
+            mainTemplate = mainTemplate.Replace("$requestCodec", "");
+            if (error != null)
+            {
+                mainTemplate = mainTemplate.Replace("$errorCodec", errorCodecTemplate);
+                handlerTemplate =
+     @$"if response, responseError := {nameCamelCase}(); responseError == nil {{
+            msg.Ack()
+        }} else {{
+            msg.Term()
+        }}";
+            }
+            else
+            {
+                mainTemplate = mainTemplate.Replace("$errorCodec", "");
+                handlerTemplate =
+     @$"response := {namePascalCase}()
+        msg.Ack()";
+            }
+            mainTemplate = mainTemplate.Replace("$handler", handlerTemplate);
+        }
+        return mainTemplate;
+    }
     public string GetNamespace(string @namespace)
     {
         return $"package {@namespace}";

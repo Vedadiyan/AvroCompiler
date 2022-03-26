@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 public class Message
 {
-    public List<object>? request { get; set; }
+    public List<Request>? request { get; set; }
     public string? response { get; set; }
     public List<string>? errors { get; set; }
     [JsonPropertyName("one-way")]

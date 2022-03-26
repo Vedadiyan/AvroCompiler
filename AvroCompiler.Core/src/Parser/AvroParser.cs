@@ -48,6 +48,7 @@ public class AvroSchemaParser
                     switch (type.type)
                     {
                         case "record":
+                        case "error":
                         case "object":
                             {
                                 if (type.fields != null)
@@ -121,14 +122,16 @@ public class AvroSchemaParser
                                 }
                                 break;
                             }
-                        case "message":
-                            {
-                                yield return new AvroMessage(type.name, new Dictionary<string, string>{}, "", languageFeature);
-                                break;
-                            }
                     }
                 }
             }
+        }
+        if (root.messages != null)
+        {
+            foreach (var message in root.messages)
+            {
+                yield return new AvroMessage(message.Key, message.Value.request!.ToDictionary(x=> x.name!, x=> x.type)!, message.Value.response!, message.Value.errors?.FirstOrDefault(), languageFeature);
+            }   
         }
     }
 }

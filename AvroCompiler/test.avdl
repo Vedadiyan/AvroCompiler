@@ -33,6 +33,11 @@ protocol Simple {
 
   string hello(string greeting);
   TestRecord echo(TestRecord `record`);
+  TestRecord echo2(TestRecord `record`) throws TestError;
+  void echo3(TestRecord `record`) throws TestError;
+  TestRecord echo4() throws TestError;
+  void echo5();
+  void echo6() throws TestError;
   int add(int arg1, int arg2);
   bytes echoBytes(bytes data);
   void `error`() throws TestError;
