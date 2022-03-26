@@ -19,22 +19,32 @@ public class AvroSchemaParser
     }
     public string Parse()
     {
-        StringBuilder stringBuilder = new StringBuilder();
+        StringBuilder preview = new StringBuilder();
         Root? root = JsonSerializer.Deserialize<Root>(avprData);
         if (root != null)
         {
-            stringBuilder.AppendLine(languageFeature.GetNamespace(root.protocol!));
-            stringBuilder.AppendLine(languageFeature.GetImports());
+            preview.AppendLine(languageFeature.GetNamespace(root.protocol!));
+            preview.AppendLine(languageFeature.GetImports());
             foreach (var i in parse(root))
             {
                 if (i is AvroRecord avroRecord)
                 {
-                    stringBuilder.AppendLine(languageFeature.GetCodec(avroRecord.Name, avroRecord.RawJson, null));
+                    preview.AppendLine(languageFeature.GetCodec(avroRecord.Name, avroRecord.RawJson, null));
                 }
-                stringBuilder.AppendLine(i.Template());
+                preview.AppendLine(i.Template());
             }
         }
-        return stringBuilder.ToString();
+        string[] tmp = preview.ToString().Split("\r\n");
+        StringBuilder finalCode = new StringBuilder();
+        foreach(var i in tmp){
+            if(!string.IsNullOrWhiteSpace(i)){
+                if(finalCode.Length > 0 && !char.IsWhiteSpace(i[0])) {
+                    finalCode.AppendLine();
+                }
+                finalCode.AppendLine(i);
+            }
+        }
+        return finalCode.ToString();
     }
     private IEnumerable<AvroElement> parse(Root root)
     {

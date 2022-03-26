@@ -20,16 +20,16 @@ public class GoLanguageFeatures : ILanguageFeature
     {
         string base46Schema = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(schema));
         return @$"
-func ({toCamelCase(name)} {toPascalCase(name)}) Codec() (*goavro.Codec, error){{
+func ({toCamelCase(name)} {toPascalCase(name)}) Codec() (*goavro.Codec, error) {{
     avroSchemaInBase64 := ""{base46Schema}""
     if value, err := base64.StdEncoding.DecodeString(avroSchemaInBase64); err == nil {{
-        if codec, err := goavro.NewCodec(value); err == nil {{
+        if codec, err := goavro.NewCodec(string(value)); err == nil {{
             return codec, nil
         }} else {{
-            return err, nil
+            return nil, err
         }}
     }} else {{
-        return err, nil
+        return nil, err
     }}
 }}
         ";
@@ -70,6 +70,7 @@ import (
     ""encoding/base64""
 
 	""github.com/linkedin/goavro""
+    ""github.com/nats-io/nats.go""
 )
         ";
     }
@@ -123,25 +124,32 @@ import (
             string natsMessage = "";
             object? error = _options?.FirstOrDefault(x => x.Name == "Error")?.GetValue(options);
 
-                if (response != "null")
+            if (response != "null")
+            {
+                if (error == null)
                 {
-                    if (error == null)
-                    {
-                        output.Append(@$"type {toPascalCase(name)} func() {response}");
+                    output.Append(@$"type {toPascalCase(name)} func() {response}");
 
-                    }
-                    else
-                    {
-                        output.Append(@$"type {toPascalCase(name)} func() ({response}, *{error})");
-                    }
+                }
+                else
+                {
+                    output.Append(@$"type {toPascalCase(name)} func() ({response}, *{error})");
+                }
+            }
+            else
+            {
+                if (error == null)
+                {
+                    output.Append(@$"type {toPascalCase(name)} func()");
                 }
                 else
                 {
                     output.Append(@$"type {toPascalCase(name)} func() *{error}");
                 }
-                natsMessage = getNatsListener(name, null, response, "", error != null ? (string)error : null);
-                output.AppendLine();
-                output.AppendLine(natsMessage);
+            }
+            natsMessage = getNatsListener(name, null, response, "", error != null ? (string)error : null);
+            output.AppendLine();
+            output.AppendLine(natsMessage);
             return output.ToString();
         }
         return "";
@@ -157,10 +165,11 @@ import (
     $subscription
             ";
         string subscriptionTemplate =
-@$"conn.Subscribe(""{@namespace}"", func(msg* nats.Msg) {{ 
+@$"conn.Subscribe(""{@namespace}"", func(msg *nats.Msg) {{ 
         $handler
     }})
             ";
+        mainTemplate = mainTemplate.Replace("$subscription", subscriptionTemplate);
         string? requestCodecTemplate = null;
         string? responseCodecTemplate = null;
         string? errorCodecTemplate = null;
@@ -201,7 +210,7 @@ $@"errorCodec, errorCodecError := {errorPascalCase}.Codec({errorPascalCase} {{}}
         {
             mainTemplate = mainTemplate.Replace("$requestCodec", requestCodecTemplate);
             handlerTemplate =
-@$"message, messageError := requestCodec.NativeFromBinary(msg.Data);
+@$"message, _, messageError := requestCodec.NativeFromBinary(msg.Data);
         if messageError != nil {{
             msg.Term()
         }} 
@@ -216,7 +225,6 @@ $@"errorCodec, errorCodecError := {errorPascalCase}.Codec({errorPascalCase} {{}}
 }}";
             if (response != "null")
             {
-                mainTemplate = mainTemplate.Replace("$subscription", subscriptionTemplate);
                 mainTemplate = mainTemplate.Replace("$handler", handlerTemplate);
                 mainTemplate = mainTemplate.Replace("$responseCodec", responseCodecTemplate);
                 string responseTemplate;
@@ -224,14 +232,14 @@ $@"errorCodec, errorCodecError := {errorPascalCase}.Codec({errorPascalCase} {{}}
                 {
                     mainTemplate = mainTemplate.Replace("$errorCodec", errorCodecTemplate);
                     responseTemplate =
-             @$"if response, responseError := {nameCamelCase}(message); responseError == nil {{
-                if responseEncoded, err := responseCodec.BinaryFromNative(response); err == nil {{
+             @$"if response, responseError := {nameCamelCase}(messageValue); responseError == nil {{
+                if responseEncoded, err := responseCodec.BinaryFromNative(nil, response); err == nil {{
                     msg.Respond(responseEncoded)
                 }} else {{
                     msg.Term()
                 }}
             }} else {{
-                if errorEncoded, err := errorCodec.BinaryFromNative(responseError); err == nil {{
+                if errorEncoded, err := errorCodec.BinaryFromNative(nil, responseError); err == nil {{
                     msg.Respond(errorEncoded)
                 }} else {{
                     msg.Term()
@@ -243,8 +251,8 @@ $@"errorCodec, errorCodecError := {errorPascalCase}.Codec({errorPascalCase} {{}}
                 {
                     mainTemplate = mainTemplate.Replace("$errorCodec", "");
                     responseTemplate =
-         @$"response := {nameCamelCase}(message);
-            if responseEncoded, err := responseCodec.BinaryFromNative(response); err == nil {{
+         @$"response := {nameCamelCase}(messageValue);
+            if responseEncoded, err := responseCodec.BinaryFromNative(nil, response); err == nil {{
                 msg.Respond(responseEncoded)
             }} else {{
                 msg.Term()
@@ -254,10 +262,9 @@ $@"errorCodec, errorCodecError := {errorPascalCase}.Codec({errorPascalCase} {{}}
             }
             else
             {
-                mainTemplate = mainTemplate.Replace("$subscription", subscriptionTemplate);
                 mainTemplate = mainTemplate.Replace("$responseCodec", "");
                 handlerTemplate =
-         @$"message, messageError := requestCodec.NativeFromBinary(msg.Data);
+         @$"message, _, messageError := requestCodec.NativeFromBinary(msg.Data);
             if messageError != nil {{
                 msg.Term();
             }} 
@@ -272,7 +279,7 @@ $@"errorCodec, errorCodecError := {errorPascalCase}.Codec({errorPascalCase} {{}}
                 {
                     mainTemplate = mainTemplate.Replace("$errorCodec", "");
                     handleTemplate =
-          @$"if error := {nameCamelCase}(message); error == nil {{
+          @$"if error := {nameCamelCase}(messageValue); error == nil {{
                 msg.Ack()
             }} else {{
                 msg.Term()
@@ -282,7 +289,7 @@ $@"errorCodec, errorCodecError := {errorPascalCase}.Codec({errorPascalCase} {{}}
                 {
                     mainTemplate = mainTemplate.Replace("$errorCodec", "");
                     handleTemplate =
-         @$"response := {namePascalCase}(message)
+         @$"{namePascalCase}(messageValue)
             msg.Ack()";
                 }
                 mainTemplate = mainTemplate.Replace("$handle", handleTemplate);
@@ -290,29 +297,72 @@ $@"errorCodec, errorCodecError := {errorPascalCase}.Codec({errorPascalCase} {{}}
         }
         else
         {
-            mainTemplate =
-@$"func ListenTo{namePascalCase}(conn *nats.Conn) {{
+            if (response != "null")
+            {
+                mainTemplate =
+                @$"func ListenTo{namePascalCase}(conn *nats.Conn, {nameCamelCase} {namePascalCase}) {{
     {mainTemplate}
 }}";
-            mainTemplate = mainTemplate.Replace("$requestCodec", "");
-            if (error != null)
+                mainTemplate = mainTemplate.Replace("$requestCodec", "");
+                mainTemplate = mainTemplate.Replace("$responseCodec", responseCodecTemplate);
+                if (error != null)
+                {
+                    mainTemplate = mainTemplate.Replace("$errorCodec", errorCodecTemplate);
+                    handlerTemplate =
+         @$"if response, responseError := {nameCamelCase}(); responseError == nil {{
+            if responseEncoded, err := responseCodec.BinaryFromNative(nil, response); err == nil {{
+                msg.Respond(responseEncoded)
+            }} else {{
+                msg.Term()
+            }}
+        }} else {{
+            if errorEncoded, err := errorCodec.BinaryFromNative(nil, responseError); err == nil {{
+                msg.Respond(errorEncoded)
+            }} else {{
+                msg.Term()
+            }}
+        }}";
+                }
+                else
+                {
+                    mainTemplate = mainTemplate.Replace("$errorCodec", "");
+                    handlerTemplate =
+         @$"response := {nameCamelCase}()
+        if responseEncoded, err := responseCodec.BinaryFromNative(nil, response); err == nil {{
+            msg.Respond(responseEncoded)
+        }} else {{
+            msg.Term()
+        }}";
+                }
+                mainTemplate = mainTemplate.Replace("$handler", handlerTemplate);
+            }
+            else
             {
-                mainTemplate = mainTemplate.Replace("$errorCodec", errorCodecTemplate);
-                handlerTemplate =
-     @$"if response, responseError := {nameCamelCase}(); responseError == nil {{
+                mainTemplate =
+@$"func ListenTo{namePascalCase}(conn *nats.Conn, {nameCamelCase} {namePascalCase}) {{
+    {mainTemplate}
+}}";
+                mainTemplate = mainTemplate.Replace("$requestCodec", "");
+                mainTemplate = mainTemplate.Replace("$responseCodec", "");
+                if (error != null)
+                {
+                    mainTemplate = mainTemplate.Replace("$errorCodec", "");
+                    handlerTemplate =
+         @$"if error := {nameCamelCase}(); error == nil {{
             msg.Ack()
         }} else {{
             msg.Term()
         }}";
+                }
+                else
+                {
+                    mainTemplate = mainTemplate.Replace("$errorCodec", "");
+                    handlerTemplate =
+         @$"{nameCamelCase}()
+            msg.Ack()";
+                }
+                mainTemplate = mainTemplate.Replace("$handler", handlerTemplate);
             }
-            else
-            {
-                mainTemplate = mainTemplate.Replace("$errorCodec", "");
-                handlerTemplate =
-     @$"response := {namePascalCase}()
-        msg.Ack()";
-            }
-            mainTemplate = mainTemplate.Replace("$handler", handlerTemplate);
         }
         return mainTemplate;
     }
