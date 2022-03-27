@@ -103,31 +103,14 @@ import (
             {
                 return "";
             }
-            string natsMessage = "";
             string type = request[request.Keys.FirstOrDefault()!];
             if (!Enum.TryParse<AvroTypes>(type.ToUpper(), out AvroTypes avroType))
             {
                 object? error = _options?.FirstOrDefault(x => x.Name == "Error")?.GetValue(options);
-
-                if (response != "null")
-                {
-                    if (error == null)
-                    {
-                        output.Append(@$"type {name.ToPascalCase()} func({type.ToCamelCase()} {type.ToPascalCase()}) {response}");
-
-                    }
-                    else
-                    {
-                        output.Append(@$"type {name.ToPascalCase()} func({type.ToCamelCase()} {type.ToPascalCase()}) ({response}, *{error})");
-                    }
-                }
-                else
-                {
-                    output.Append(@$"type {name.ToPascalCase()} func({type.ToCamelCase()} {type.ToPascalCase()}) *{error}");
-                }
-                natsMessage = new NatsListenerCreator(name, "", type, response, error != null ? (string)error : null).GetFunction();
+                NatsClientCreator natsClientCreator = new NatsClientCreator(name, "", type, response, error != null ? (string)error : null);
                 output.AppendLine();
-                output.AppendLine(natsMessage);
+                output.AppendLine(natsClientCreator.GetFunctionType());
+                output.Append(natsClientCreator.GetFunction());
             }
             return output.ToString();
         }
@@ -139,35 +122,11 @@ import (
             {
                 return "";
             }
-            string natsMessage = "";
             object? error = _options?.FirstOrDefault(x => x.Name == "Error")?.GetValue(options);
-
-            if (response != "null")
-            {
-                if (error == null)
-                {
-                    output.Append(@$"type {name.ToPascalCase()} func() {response}");
-
-                }
-                else
-                {
-                    output.Append(@$"type {name.ToPascalCase()} func() ({response}, *{error})");
-                }
-            }
-            else
-            {
-                if (error == null)
-                {
-                    output.Append(@$"type {name.ToPascalCase()} func()");
-                }
-                else
-                {
-                    output.Append(@$"type {name.ToPascalCase()} func() *{error}");
-                }
-            }
-            natsMessage = new NatsListenerCreator(name, "", null, response, error != null ? (string)error : null).GetFunction();
+            NatsClientCreator natsClientCreator = new NatsClientCreator(name, "", null, response, error != null ? (string)error : null);
             output.AppendLine();
-            output.AppendLine(natsMessage);
+            output.AppendLine(natsClientCreator.GetFunctionType());
+            output.AppendLine(natsClientCreator.GetFunction());
             return output.ToString();
         }
         return "";

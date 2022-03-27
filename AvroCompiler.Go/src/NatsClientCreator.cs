@@ -1,13 +1,6 @@
 namespace AvroCompiler.Go;
 
-[Flags]
-public enum FunctionTypes
-{
-    REQUEST = 1,
-    RESPONSE = 2,
-    ERROR = 4
-}
-public class NatsListenerCreator
+public class NatsClientCreator
 {
     private class PlaceHolders
     {
@@ -31,15 +24,11 @@ public class NatsListenerCreator
     private class Templates
     {
         public static readonly string Function =
-@$"func {PlaceHolders.FunctionNamePascalCase}Listener(conn *nats.Conn) func({PlaceHolders.FunctionNameCamelCase} {PlaceHolders.FunctionNamePascalCase}) (*nats.Subscription, error) {{
+@$"func {PlaceHolders.FunctionNamePascalCase}Client(conn *nats.Conn) {PlaceHolders.FunctionNamePascalCase} {{
 {PlaceHolders.RequestCodec}
 {PlaceHolders.ResponseCodec}
 {PlaceHolders.ErrorCodec}
-    return func({PlaceHolders.FunctionNameCamelCase} {PlaceHolders.FunctionNamePascalCase}) (*nats.Subscription, error) {{
-        return conn.Subscribe(""{PlaceHolders.Namespace}"", func(msg *nats.Msg) {{
 {PlaceHolders.Handler}
-        }})
-    }}
 }}";
         public static readonly string RequestCodec =
 @$"
@@ -63,33 +52,6 @@ if errorCodecError != nil {{
     panic(errorCodec)
 }}
 ";
-        public static readonly string RequestHandler =
-@$"
-if requestDecoded, _, requestDecodingError := requestCodec.NativeFromBinary(msg.Data); requestDecodingError == nil {{
-    if request, ok := requestDecoded.({PlaceHolders.RequestNamePascalCase}); ok {{
-{PlaceHolders.Next}
-    }} else {{
-        {PlaceHolders.Error}
-    }}
-}} else {{
-    {PlaceHolders.Error}
-}}";
-        public static readonly string ResponseHandler =
-@$"
-if responseEncoded, responseEncodingError := responseCodec.BinaryFromNative(nil, response); responseEncodingError == nil {{
-    msg.Respond(responseEncoded)
-}} else {{
-    {PlaceHolders.Error}
-}}
-";
-        public static readonly string ErrorHandler =
-@$"
-if errorEncoded, errorEncodingError := errorCodec.BinaryFromNative(nil, err); errorEncodingError == nil {{
-    msg.Respond(errorEncoded)
-}} else {{
-    {PlaceHolders.Error}
-}}
-";
         public static string GetFunction(FunctionTypes functionType)
         {
             if ((functionType & FunctionTypes.ERROR) != FunctionTypes.ERROR)
@@ -98,32 +60,70 @@ if errorEncoded, errorEncodingError := errorCodec.BinaryFromNative(nil, err); er
                 {
                     string template =
 @$"
-response := {PlaceHolders.FunctionNameCamelCase}(request)
-{Templates.ResponseHandler}
+return func({PlaceHolders.RequestNameCamelCase} {PlaceHolders.RequestNamePascalCase}) (*{PlaceHolders.ResponseNamePascalCase}, error) {{
+    if requestEncoded, requestEncodedError := requestCodec.BinaryFromNative(nil, {PlaceHolders.RequestNameCamelCase}); requestEncodedError == nil {{
+        if response, error := conn.Request(""{PlaceHolders.Namespace}"", requestEncoded, time.Second * 10); error == nil {{
+            if responseDecoded, _, responseDecodedError := responseCodec.NativeFromBinary(response.Data); responseDecodedError == nil {{
+                if response, ok := responseDecoded.({PlaceHolders.ResponseNamePascalCase}); ok {{
+                    return &response, nil
+                }} else {{
+                    return nil, errors.New(""Invalid message type"")
+                }}
+            }} else {{
+                return nil, responseDecodedError
+            }}
+        }} else {{
+            return nil, error
+        }}
+    }} else {{
+        return nil, requestEncodedError
+    }}
+}}
 ";
-                    return Templates.RequestHandler.Replace(PlaceHolders.Next, template);
+                    return template;
                 }
                 else if ((functionType & FunctionTypes.REQUEST) == FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) != FunctionTypes.RESPONSE)
                 {
                     string template =
 @$"
-{PlaceHolders.FunctionNameCamelCase}(request)
+return func({PlaceHolders.RequestNameCamelCase} {PlaceHolders.RequestNamePascalCase}) error {{
+    if requestEncoded, requestEncodedError := requestCodec.BinaryFromNative(nil, {PlaceHolders.RequestNameCamelCase}); requestEncodedError == nil {{
+        return conn.Publish(""{PlaceHolders.Namespace}"", requestEncoded)
+    }} else {{
+        return requestEncodedError
+    }}
+}}
 ";
-                    return Templates.RequestHandler.Replace(PlaceHolders.Next, template);
+                    return template;
                 }
                 else if ((functionType & FunctionTypes.REQUEST) != FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) == FunctionTypes.RESPONSE)
                 {
                     return
 @$"
-response := {PlaceHolders.FunctionNameCamelCase}()
-{Templates.ResponseHandler}
+return func({PlaceHolders.RequestNameCamelCase} {PlaceHolders.RequestNamePascalCase}) (*{PlaceHolders.ResponseNamePascalCase}, error) {{
+    if response, error := conn.Request(""{PlaceHolders.Namespace}"", []byte {{}}, time.Second * 10); error == nil {{
+        if responseDecoded, _, responseDecodedError := responseCodec.NativeFromBinary(response.Data); responseDecodedError == nil {{
+            if response, ok := responseDecoded.({PlaceHolders.ResponseNamePascalCase}); ok {{
+                return &response, nil
+            }} else {{
+                return nil, errors.New(""Invalid message type"")
+            }}
+        }} else {{
+            return nil, responseDecodedError
+        }}
+    }} else {{
+        return nil, error
+    }}
+}}
 ";
                 }
                 else if ((functionType & FunctionTypes.REQUEST) != FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) != FunctionTypes.RESPONSE)
                 {
                     return
 @$"
-{PlaceHolders.FunctionNameCamelCase}()
+return func() error {{
+    return conn.Publish(""{PlaceHolders.Namespace}"", []byte {{}})
+}}
 ";
                 }
                 else
@@ -137,43 +137,82 @@ response := {PlaceHolders.FunctionNameCamelCase}()
                 {
                     string template =
 @$"
-if response, err := {PlaceHolders.FunctionNameCamelCase}(request); err == nil {{
-    {Templates.ResponseHandler}
-}} else {{
-    {Templates.ErrorHandler}
+return func({PlaceHolders.RequestNameCamelCase} {PlaceHolders.RequestNamePascalCase}) (*{PlaceHolders.ResponseNamePascalCase}, *{PlaceHolders.ErrorNamePascalCase}, error) {{
+    if requestEncoded, requestEncodedError := requestCodec.BinaryFromNative(nil, {PlaceHolders.RequestNameCamelCase}); requestEncodedError == nil {{
+        if response, error := conn.Request(""{PlaceHolders.Namespace}"", requestEncoded, time.Second * 10); error == nil {{
+            if response.Header.Get(""Status"") == ""200"" {{
+                if responseDecoded, _, responseDecodedError := responseCodec.NativeFromBinary(response.Data); responseDecodedError == nil {{
+                    if response, ok := responseDecoded.({PlaceHolders.ResponseNamePascalCase}); ok {{
+                        return &response, nil, nil
+                    }} else {{
+                        return nil, nil, errors.New(""Invalid message type"")
+                    }}
+                }} else {{
+                    return nil, nil, responseDecodedError
+                }}
+            }} else {{
+                if errorDecoded, _, errorDecodedError := errorCodec.NativeFromBinary(response.Data); errorDecodedError == nil {{
+                    if error, ok := errorDecoded.({PlaceHolders.ErrorNamePascalCase}); ok {{
+                        return nil, &error, nil
+                    }} else {{
+                        return nil, nil, errors.New(""Invalid error type"")
+                    }}
+                }} else {{
+                    return nil, nil, errorDecodedError
+                }}
+            }}
+
+        }} else {{
+            return nil, nil, error
+        }}
+    }} else {{
+        return nil, nil, requestEncodedError
+    }}
 }}
 ";
-                    return Templates.RequestHandler.Replace(PlaceHolders.Next, template);
+                    return template;
                 }
                 else if ((functionType & FunctionTypes.REQUEST) == FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) != FunctionTypes.RESPONSE)
                 {
-                    string template =
-@$"
-if err := {PlaceHolders.FunctionNameCamelCase}(request); err != nil {{
-    {Templates.ErrorHandler}
-}}
-";
-                    return Templates.RequestHandler.Replace(PlaceHolders.Next, template);
+                    return GetFunction(functionType ^ FunctionTypes.ERROR);
                 }
                 else if ((functionType & FunctionTypes.REQUEST) != FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) == FunctionTypes.RESPONSE)
                 {
                     return
 @$"
-if response, err := {PlaceHolders.FunctionNameCamelCase}(); err == nil {{
-    {Templates.ResponseHandler}
-}} else {{
-    {Templates.ErrorHandler}
+return func() (*{PlaceHolders.ResponseNamePascalCase}, *{PlaceHolders.ErrorNamePascalCase}, error) {{
+   if response, error := conn.Request(""{PlaceHolders.Namespace}"", []byte {{}}, time.Second * 10); error == nil {{
+        if response.Header.Get(""Status"") == ""200"" {{
+            if responseDecoded, _, responseDecodedError := responseCodec.NativeFromBinary(response.Data); responseDecodedError == nil {{
+                if response, ok := responseDecoded.({PlaceHolders.ResponseNamePascalCase}); ok {{
+                    return &response, nil, nil
+                }} else {{
+                    return nil, nil, errors.New(""Invalid message type"")
+                }}
+            }} else {{
+                return nil, nil, responseDecodedError
+            }}
+        }} else {{
+            if errorDecoded, _, errorDecodedError := errorCodec.NativeFromBinary(response.Data); errorDecodedError == nil {{
+                if error, ok := errorDecoded.({PlaceHolders.ErrorNamePascalCase}); ok {{
+                    return nil, &error, nil
+                }} else {{
+                    return nil, nil, errors.New(""Invalid error type"")
+                }}
+            }} else {{
+                return nil, nil, errorDecodedError
+            }}
+        }}
+
+    }} else {{
+        return nil, nil, error
+    }}
 }}
 ";
                 }
                 else if ((functionType & FunctionTypes.REQUEST) != FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) != FunctionTypes.RESPONSE)
                 {
-                    return
-@$"
-if err := {PlaceHolders.FunctionNameCamelCase}(); err != nil {{
-    {Templates.ErrorHandler}
-}}
-";
+                    return GetFunction(functionType ^ FunctionTypes.ERROR);
                 }
                 else
                 {
@@ -188,7 +227,7 @@ if err := {PlaceHolders.FunctionNameCamelCase}(); err != nil {{
     private readonly string? response;
     private readonly string? error;
     private readonly FunctionTypes functionType;
-    public NatsListenerCreator(string functionName, string @namespace, string? request, string? response, string? error)
+    public NatsClientCreator(string functionName, string @namespace, string? request, string? response, string? error)
     {
         this.functionName = functionName;
         this.@namespace = @namespace;
@@ -215,6 +254,7 @@ if err := {PlaceHolders.FunctionNameCamelCase}(); err != nil {{
         {
             template = template.Replace(PlaceHolders.RequestCodec, Templates.RequestCodec);
             template = template.Replace(PlaceHolders.RequestNamePascalCase, request!.ToPascalCase());
+            template = template.Replace(PlaceHolders.RequestNameCamelCase, request!.ToCamelCase());
         }
         if ((functionType & FunctionTypes.RESPONSE) == FunctionTypes.RESPONSE)
         {
@@ -231,7 +271,6 @@ if err := {PlaceHolders.FunctionNameCamelCase}(); err != nil {{
         template = template.Replace(PlaceHolders.ErrorCodec, "");
         template = template.Replace(PlaceHolders.FunctionNameCamelCase, functionName.ToCamelCase());
         template = template.Replace(PlaceHolders.FunctionNamePascalCase, functionName.ToPascalCase());
-        template = template.Replace(PlaceHolders.Error, "msg.Term()");
         return template;
     }
     public string GetFunctionType()
@@ -240,19 +279,19 @@ if err := {PlaceHolders.FunctionNameCamelCase}(); err != nil {{
         {
             if ((functionType & FunctionTypes.REQUEST) == FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) == FunctionTypes.RESPONSE)
             {
-                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} {request!.ToPascalCase()}) {response!.ToPascalCase()}";
+                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} {request!.ToPascalCase()}) (*{response!.ToPascalCase()}, error)";
             }
             else if ((functionType & FunctionTypes.REQUEST) != FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) == FunctionTypes.RESPONSE)
             {
-                return @$"type {functionName.ToPascalCase()} func() {response!.ToPascalCase()}";
+                return @$"type {functionName.ToPascalCase()} func() (*{response!.ToPascalCase()}, error)";
             }
             else if ((functionType & FunctionTypes.REQUEST) == FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) != FunctionTypes.RESPONSE)
             {
-                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} {request!.ToPascalCase()})";
+                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} {request!.ToPascalCase()}) error";
             }
             else if ((functionType & FunctionTypes.REQUEST) != FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) != FunctionTypes.RESPONSE)
             {
-                return @$"type {functionName.ToPascalCase()} func()";
+                return @$"type {functionName.ToPascalCase()} func() error";
             }
             else
             {
@@ -263,19 +302,19 @@ if err := {PlaceHolders.FunctionNameCamelCase}(); err != nil {{
         {
             if ((functionType & FunctionTypes.REQUEST) == FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) == FunctionTypes.RESPONSE)
             {
-                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} {request!.ToPascalCase()}) {response!.ToPascalCase()}, {error!.ToPascalCase()})";
+                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} {request!.ToPascalCase()}) (*{response!.ToPascalCase()}, *{error!.ToPascalCase()}, error)";
             }
             else if ((functionType & FunctionTypes.REQUEST) != FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) == FunctionTypes.RESPONSE)
             {
-                return @$"type {functionName.ToPascalCase()} func() ({response!.ToPascalCase()}, {error!.ToPascalCase()})";
+                return @$"type {functionName.ToPascalCase()} func() (*{response!.ToPascalCase()}, *{error!.ToPascalCase()}, error)";
             }
             else if ((functionType & FunctionTypes.REQUEST) == FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) != FunctionTypes.RESPONSE)
             {
-                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} {request!.ToPascalCase()}) ({error!.ToPascalCase()})";
+                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} {request!.ToPascalCase()}) error";
             }
             else if ((functionType & FunctionTypes.REQUEST) != FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) != FunctionTypes.RESPONSE)
             {
-                return @$"type {functionName.ToPascalCase()} func() ({error!.ToPascalCase()}";
+                return @$"type {functionName.ToPascalCase()} func() error";
             }
             else
             {
