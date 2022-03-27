@@ -17,7 +17,7 @@ public class AvroSchemaParser
         }
         this.languageFeature = languageFeature;
     }
-    public string Parse()
+    public async Task<string> Parse()
     {
         StringBuilder preview = new StringBuilder();
         Root? root = JsonSerializer.Deserialize<Root>(avprData);
@@ -34,17 +34,7 @@ public class AvroSchemaParser
                 preview.AppendLine(i.Template());
             }
         }
-        string[] tmp = preview.ToString().Split("\r\n");
-        StringBuilder finalCode = new StringBuilder();
-        foreach(var i in tmp){
-            if(!string.IsNullOrWhiteSpace(i)){
-                if(finalCode.Length > 0 && !char.IsWhiteSpace(i[0])) {
-                    finalCode.AppendLine();
-                }
-                finalCode.AppendLine(i);
-            }
-        }
-        return finalCode.ToString();
+        return await languageFeature.Format(preview.ToString());
     }
     private IEnumerable<AvroElement> parse(Root root)
     {
