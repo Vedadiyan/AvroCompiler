@@ -39,7 +39,7 @@ public class GoLanguageFeatures : ILanguageFeature
         string base46Schema = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(schema));
         return @$"
 func ({name.ToCamelCase()} {name.ToPascalCase()}) Codec() (*goavro.Codec, error) {{
-    avroSchemaInBase64 := ""{base46Schema}""
+    avroSchemaInBase64 := ""{schema}""
     if value, err := base64.StdEncoding.DecodeString(avroSchemaInBase64); err == nil {{
         if codec, err := goavro.NewCodec(string(value)); err == nil {{
             return codec, nil
