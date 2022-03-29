@@ -34,10 +34,30 @@ public class GoLanguageFeatures : ILanguageFeature
 
     public string GetArray(AvroTypes elementType, string name, object? options)
     {
+        if (options != null)
+        {
+            PropertyInfo[] properties = options.GetType().GetProperties();
+            PropertyInfo? jsonPropertyNameProperty = properties.FirstOrDefault(x => x.Name == "JsonPropertyName");
+            if (jsonPropertyNameProperty != null)
+            {
+                string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
+                return @$"{name.ToPascalCase()} []{GetType(elementType)} `avro:""{jsonPropertyName}""`";
+            }
+        }
         return $"{name.ToPascalCase()} []{GetType(elementType)}";
     }
     public string GetArray(string elementType, string name, object? options)
     {
+        if (options != null)
+        {
+            PropertyInfo[] properties = options.GetType().GetProperties();
+            PropertyInfo? jsonPropertyNameProperty = properties.FirstOrDefault(x => x.Name == "JsonPropertyName");
+            if (jsonPropertyNameProperty != null)
+            {
+                string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
+                return @$"{name.ToPascalCase()} []{elementType} `avro:""{jsonPropertyName}""`";
+            }
+        }
         return $"{name.ToPascalCase()} []{elementType}";
     }
 
@@ -83,11 +103,31 @@ func ({name.ToCamelCase()} {name.ToPascalCase()}) Codec() (*goavro.Codec, error)
 
     public string GetField(AvroTypes type, string name, object? options)
     {
+        if (options != null)
+        {
+            PropertyInfo[] properties = options.GetType().GetProperties();
+            PropertyInfo? jsonPropertyNameProperty = properties.FirstOrDefault(x => x.Name == "JsonPropertyName");
+            if (jsonPropertyNameProperty != null)
+            {
+                string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
+                return @$"{name.ToPascalCase()} {GetType(type)} `avro:""{jsonPropertyName}""`";
+            }
+        }
         return $"{name.ToPascalCase()} {GetType(type)}";
     }
 
     public string GetField(string type, AvroTypes actualType, string name, object? options)
     {
+        if (options != null)
+        {
+            PropertyInfo[] properties = options.GetType().GetProperties();
+            PropertyInfo? jsonPropertyNameProperty = properties.FirstOrDefault(x => x.Name == "JsonPropertyName");
+            if (jsonPropertyNameProperty != null)
+            {
+                string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
+                return @$"{name.ToPascalCase()} {nullable(actualType)}{type} `avro:""{jsonPropertyName}""`";
+            }
+        }
         return $"{name.ToPascalCase()} {nullable(actualType)}{type}";
     }
 
@@ -114,10 +154,30 @@ import (
 
     public string GetMap(AvroTypes elementType, string name, object? options)
     {
+        if (options != null)
+        {
+            PropertyInfo[] properties = options.GetType().GetProperties();
+            PropertyInfo? jsonPropertyNameProperty = properties.FirstOrDefault(x => x.Name == "JsonPropertyName");
+            if (jsonPropertyNameProperty != null)
+            {
+                string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
+                return @$"{name.ToPascalCase()} map[{GetType(elementType)}]any `avro:""{jsonPropertyName}""`";
+            }
+        }
         return $"{name.ToPascalCase()} map[{GetType(elementType)}]any";
     }
     public string GetMap(string elementType, string name, object? options)
     {
+        if (options != null)
+        {
+            PropertyInfo[] properties = options.GetType().GetProperties();
+            PropertyInfo? jsonPropertyNameProperty = properties.FirstOrDefault(x => x.Name == "JsonPropertyName");
+            if (jsonPropertyNameProperty != null)
+            {
+                string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
+                return @$"{name.ToPascalCase()} map[{elementType}]any `avro:""{jsonPropertyName}""`";
+            }
+        }
         return $"{name.ToPascalCase()} map[{elementType}]any";
     }
     public string GetMessage(string name, IReadOnlyDictionary<string, string> request, string response, object? options)

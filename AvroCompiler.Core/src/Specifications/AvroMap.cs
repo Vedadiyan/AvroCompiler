@@ -21,11 +21,11 @@ public class AvroMap : AvroElement
     {
         if (ElementType != AvroTypes.REFERENCE)
         {
-            return LanguageFeature.GetMap(ElementType, Name, null);
+            return LanguageFeature.GetMap(ElementType, Name, new { JsonPropertyName = Name });
         }
         else
         {
-            return LanguageFeature.GetMap(TypeNames![0], Name, null);
+            return LanguageFeature.GetMap(TypeNames![0], Name, new { JsonPropertyName = Name });
         }
     }
 }

@@ -21,11 +21,11 @@ public class AvroArray : AvroElement
     {
         if (ElementType != AvroTypes.REFERENCE)
         {
-            return LanguageFeature.GetArray(ElementType, Name, null);
+            return LanguageFeature.GetArray(ElementType, Name, new { JsonPropertyName = Name });
         }
         else
         {
-            return LanguageFeature.GetArray(TypeNames![0], Name, null);
+            return LanguageFeature.GetArray(TypeNames![0], Name, new { JsonPropertyName = Name });
         }
     }
 }
