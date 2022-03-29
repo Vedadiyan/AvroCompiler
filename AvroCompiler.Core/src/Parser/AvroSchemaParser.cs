@@ -60,8 +60,14 @@ public class AvroSchemaParser
                             if (!HasValue(field.Name) || !HasValue(field.Type)) continue;
                             if (IsUnionType(field.Type))
                             {
-                                string[]? typeNames = MustNeverBeNull(field.Type).Deserialize<string[]>();
-                                if (!HasValue(typeNames)) continue;
+                                string[] typeNames = MustNeverBeNull(field.Type).EnumerateArray().Select(x=> {
+                                    if(x.ValueKind == JsonValueKind.String) {
+                                        return x.GetString()!;
+                                    } 
+                                    else {
+                                        return "UNION";
+                                    }
+                                }).ToArray();
                                 fields.Add(
                                     MustNeverBeNull(field.Name),
                                     new AvroField(

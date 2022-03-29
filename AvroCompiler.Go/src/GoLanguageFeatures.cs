@@ -8,6 +8,13 @@ namespace AvroCompiler.Go;
 
 public class GoLanguageFeatures : ILanguageFeature
 {
+    private HashSet<string> types;
+    private HashSet<string> codecs;
+    public GoLanguageFeatures()
+    {
+        types = new HashSet<string>();
+        codecs = new HashSet<string>();
+    }
     public async Task<string> Format(string input)
     {
         string tempFile = Path.GetTempFileName();
@@ -36,10 +43,12 @@ public class GoLanguageFeatures : ILanguageFeature
 
     public string GetCodec(string name, string schema, object? options)
     {
-        string base46Schema = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(schema));
-        return @$"
+        if (codecs.Add(name))
+        {
+            string base46Schema = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(schema));
+            return @$"
 func ({name.ToCamelCase()} {name.ToPascalCase()}) Codec() (*goavro.Codec, error) {{
-    avroSchemaInBase64 := ""{schema}""
+    avroSchemaInBase64 := ""{base46Schema}""
     if value, err := base64.StdEncoding.DecodeString(avroSchemaInBase64); err == nil {{
         if codec, err := goavro.NewCodec(string(value)); err == nil {{
             return codec, nil
@@ -51,19 +60,25 @@ func ({name.ToCamelCase()} {name.ToPascalCase()}) Codec() (*goavro.Codec, error)
     }}
 }}
         ";
+        }
+        return string.Empty;
     }
 
     public string GetEnum(string name, string[] symbols, object? options)
     {
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.AppendLine($"type {name.ToPascalCase()} int");
-        stringBuilder.AppendLine("const (");
-        for (int i = 0; i < symbols.Length; i++)
+        if (types.Add(name))
         {
-            stringBuilder.AppendLine($"    {symbols[i]} {name.ToPascalCase()} = {i}");
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.AppendLine($"type {name.ToPascalCase()} int");
+            stringBuilder.AppendLine("const (");
+            for (int i = 0; i < symbols.Length; i++)
+            {
+                stringBuilder.AppendLine($"    {symbols[i]} {name.ToPascalCase()} = {i}");
+            }
+            stringBuilder.AppendLine(")");
+            return stringBuilder.ToString();
         }
-        stringBuilder.AppendLine(")");
-        return stringBuilder.ToString();
+        return string.Empty;
     }
 
     public string GetField(AvroTypes type, string name, object? options)
@@ -78,7 +93,11 @@ func ({name.ToCamelCase()} {name.ToPascalCase()}) Codec() (*goavro.Codec, error)
 
     public string GetFixed(string name, object? options)
     {
-        return $"type {name.ToPascalCase()} string";
+        if (types.Add(name))
+        {
+            return $"type {name.ToPascalCase()} string";
+        }
+        return string.Empty;
     }
 
     public string GetImports()
@@ -138,32 +157,36 @@ import (
 
     public string GetRecord(string name, string[] fields, object? options)
     {
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.AppendLine($"type {name.ToPascalCase()} struct {{");
-        foreach (var i in fields)
+        if (types.Add(name))
         {
-            stringBuilder.AppendLine($"    {i}");
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.AppendLine($"type {name.ToPascalCase()} struct {{");
+            foreach (var i in fields)
+            {
+                stringBuilder.AppendLine($"    {i}");
+            }
+            stringBuilder.AppendLine("}");
+            return stringBuilder.ToString();
         }
-        stringBuilder.AppendLine("}");
-        return stringBuilder.ToString();
+        return string.Empty;
     }
 
     public string GetType(AvroTypes type)
     {
         switch (type)
         {
-            case AvroTypes.UNION:
-            case AvroTypes.UNION | AvroTypes.NULL:
+            case var t when (t & AvroTypes.UNION) == AvroTypes.UNION:
+            case AvroTypes.NULL:
                 {
                     return "any";
                 }
             case AvroTypes.BOOLEAN:
                 {
-                    return "boolean";
+                    return "bool";
                 }
             case AvroTypes.BOOLEAN | AvroTypes.NULL:
                 {
-                    return "*boolean";
+                    return "*bool";
                 }
             case AvroTypes.BYTES:
                 {
@@ -171,19 +194,19 @@ import (
                 }
             case AvroTypes.DOUBLE:
                 {
-                    return "double";
+                    return "float64";
                 }
             case AvroTypes.DOUBLE | AvroTypes.NULL:
                 {
-                    return "*double";
+                    return "*float64";
                 }
             case AvroTypes.FLOAT:
                 {
-                    return "float";
+                    return "float32";
                 }
             case AvroTypes.FLOAT | AvroTypes.NULL:
                 {
-                    return "*float";
+                    return "*float32";
                 }
             case AvroTypes.INT:
                 {
@@ -207,7 +230,7 @@ import (
                 }
             case AvroTypes.LONG | AvroTypes.NULL:
                 {
-                    return "*long";
+                    return "*int64";
                 }
             case AvroTypes.TIMESTAMP:
                 {

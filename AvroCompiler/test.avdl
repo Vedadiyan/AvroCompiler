@@ -4,6 +4,8 @@
 @namespace("org.apache.avro.test")
 protocol Simple {
 
+  import idl url("https://raw.githubusercontent.com/apache/avro/master/lang/java/compiler/src/test/idl/input/interop.avdl");
+
   @aliases(["org.foo.KindOf"])
   enum Kind {
     FOO,

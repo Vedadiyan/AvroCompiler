@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using AvroCompiler.Core;
 using AvroCompiler.Core.AvroAPI;
 using AvroCompiler.Core.Parser;
 using AvroCompiler.Go;
@@ -9,7 +10,7 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
-        var result = AvroToolsApi.Idl("test.avdl").Result;
-        System.IO.File.WriteAllText("Test.go", await new AvroSchemaParser(result, new GoLanguageFeatures()).Parse());
+        AvroCompilerContext avroCompilerContext = new AvroCompilerContext("test.avdl", new GoLanguageFeatures());
+        await avroCompilerContext.Compile("Test.go");
     }
 }

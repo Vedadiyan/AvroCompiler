@@ -17,5 +17,5 @@ public enum AvroTypes
     BYTES = 1 << 12,
     TIMESTAMP = 1 << 13,
     REFERENCE = 1 << 14,
-    NULL = 1 << 15
+    NULL = 1 << 15,
 }

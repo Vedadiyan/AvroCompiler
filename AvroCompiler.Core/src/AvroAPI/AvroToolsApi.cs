@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Reflection;
+using AvroCompiler.Core.Storage;
 
 namespace AvroCompiler.Core.AvroAPI;
 
@@ -8,7 +9,7 @@ public class AvroToolsApi
     private static readonly string tempFileName;
     static AvroToolsApi()
     {
-        tempFileName = Path.GetTempFileName();
+        tempFileName = TempFiles.Current.Value.GetTempFileName();
         using (FileStream fs = new FileStream(tempFileName, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
         {
             Stream? stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("avro-tools-1.9.1.jar");
@@ -23,7 +24,7 @@ public class AvroToolsApi
     }
     public static async Task<Stream> Idl(string source)
     {
-        string target = Path.GetTempFileName();
+        string target = TempFiles.Current.Value.GetTempFileName();
         ProcessStartInfo processStartInfo = new ProcessStartInfo("java", $" -jar {tempFileName} idl {source} {target}");
         processStartInfo.WindowStyle = ProcessWindowStyle.Normal;
         Process? process = Process.Start(processStartInfo);
@@ -41,8 +42,5 @@ public class AvroToolsApi
         {
             throw new Exception();
         }
-    }
-    public static void CleanWorkSpace() {
-        File.Delete(tempFileName);
     }
 }
