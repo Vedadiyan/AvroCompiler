@@ -12,6 +12,6 @@ public class AvroRecord : AvroElement
     }
     public override string Template()
     {
-        return LanguageFeature.GetRecord(Name, Fields.Select(x => x.Value.Template()).ToArray(), null);
+        return LanguageFeature.GetRecord(Name, Fields.Select(x => x.Value).ToArray(), null);
     }
 }

@@ -17,6 +17,6 @@ public interface ILanguageFeature
     string GetArray(int dimensions, string elementType, string name, object? options);
     string GetMap(AvroTypes elementType, string name, object? options);
     string GetMap(string elementType, string name, object? options);
-    string GetRecord(string name, string[] fields, object? options);
+    string GetRecord(string name, AvroElement[] fields, object? options);
     Task<string> Format(string input);
 }

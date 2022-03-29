@@ -1,9 +1,10 @@
-/**
- * An example protocol in Avro IDL
- */
-@namespace("org.apache.avro.test")
-protocol Simple {
-  record Test {
-    array<array<array<map<int>>>> value; 
-  }
+protocol Expedia {
+    record Request {
+      array<array<array<int>>> test;
+    }
+    record Response {
+      string results;
+    }
+
+    Response GetResults(Request request);
 }
