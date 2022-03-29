@@ -18,7 +18,7 @@ public class AvroField : AvroElement
                 AvroType |= AvroTypes.REFERENCE;
             }
         }
-        if (AvroType != AvroTypes.REFERENCE)
+        if (AvroType != AvroTypes.REFERENCE && (AvroType & AvroTypes.UNION) != AvroTypes.UNION)
         {
             bool isNulable = (AvroType & AvroTypes.NULL) == AvroTypes.NULL;
             AvroTypes _type = AvroType;
@@ -41,11 +41,22 @@ public class AvroField : AvroElement
     {
         if ((AvroType & AvroTypes.REFERENCE) == AvroTypes.REFERENCE)
         {
-            return LanguageFeature.GetField(TypeNames![0], AvroType,  Name, new { JsonPropertyName = Name });
+            return LanguageFeature.GetField(TypeNames![0], AvroType, Name, new { JsonPropertyName = Name });
+        }
+        else if (AvroType == AvroTypes.MAP)
+        {
+            if (Enum.TryParse<AvroTypes>(TypeNames![1].ToUpper(), out AvroTypes type))
+            {
+                return LanguageFeature.GetMap(type, Name, new { JsonPropertyName = Name });
+            }
+            else
+            {
+                return LanguageFeature.GetMap(TypeNames[1]!, Name, new { JsonPropertyName = Name });
+            }
         }
         else
         {
-            return LanguageFeature.GetField(AvroType, Name, new { JsonPropertyName = Name });
+            return LanguageFeature.GetField(AvroType, Name, new { JsonPropertyName = Name, Types = TypeNames });
         }
     }
 }

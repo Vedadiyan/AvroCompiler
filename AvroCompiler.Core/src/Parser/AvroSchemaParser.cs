@@ -60,11 +60,14 @@ public class AvroSchemaParser
                             if (!HasValue(field.Name) || !HasValue(field.Type)) continue;
                             if (IsUnionType(field.Type))
                             {
-                                string[] typeNames = MustNeverBeNull(field.Type).EnumerateArray().Select(x=> {
-                                    if(x.ValueKind == JsonValueKind.String) {
+                                string[] typeNames = MustNeverBeNull(field.Type).EnumerateArray().Select(x =>
+                                {
+                                    if (x.ValueKind == JsonValueKind.String)
+                                    {
                                         return x.GetString()!;
-                                    } 
-                                    else {
+                                    }
+                                    else
+                                    {
                                         return "UNION";
                                     }
                                 }).ToArray();
@@ -125,18 +128,31 @@ public class AvroSchemaParser
                                         }
                                         else if (IsFieldType(types))
                                         {
-                                            fields.Add(
-                                                MustNeverBeNull(field.Name),
-                                                new AvroField(
+                                            string typeName = MustNeverBeNull(types.GetString());
+                                            if (typeName == "map" && MustNeverBeNull(field.Type).TryGetProperty("values", out JsonElement values))
+                                            {
+                                                fields.Add(
                                                     MustNeverBeNull(field.Name),
-                                                    new string[] {
-                                                                MustNeverBeNull(
-                                                                    MustNeverBeNull(types).GetString()
-                                                                )
-                                                    },
-                                                    languageFeature
-                                                )
-                                            );
+                                                    new AvroMap(
+                                                        MustNeverBeNull(field.Name),
+                                                        MustNeverBeNull(values.GetString()),
+                                                        languageFeature
+                                                    )
+                                                );
+                                            }
+                                            else
+                                            {
+                                                fields.Add(
+                                                    MustNeverBeNull(field.Name),
+                                                    new AvroField(
+                                                        MustNeverBeNull(field.Name),
+                                                        new string[] {
+                                                        typeName
+                                                        },
+                                                        languageFeature
+                                                    )
+                                                );
+                                            }
                                         }
                                         else
                                         {
@@ -144,7 +160,7 @@ public class AvroSchemaParser
                                         }
                                     }
                                 }
-                            
+
                             }
                         }
                         yield return new AvroRecord(MustNeverBeNull(type.Name), fields, type.RawObject.GetRawText(), languageFeature);

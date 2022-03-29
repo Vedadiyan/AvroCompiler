@@ -112,6 +112,14 @@ import (
         ";
     }
 
+    public string GetMap(AvroTypes elementType, string name, object? options)
+    {
+        return $"{name.ToPascalCase()} map[{GetType(elementType)}]any";
+    }
+    public string GetMap(string elementType, string name, object? options)
+    {
+        return $"{name.ToPascalCase()} map[{elementType}]any";
+    }
     public string GetMessage(string name, IReadOnlyDictionary<string, string> request, string response, object? options)
     {
         if (request.Count == 1)
