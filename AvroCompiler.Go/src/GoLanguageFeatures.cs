@@ -32,8 +32,13 @@ public class GoLanguageFeatures : ILanguageFeature
         throw new Exception("Could not format the code");
     }
 
-    public string GetArray(AvroTypes elementType, string name, object? options)
+    public string GetArray(int dimensions, AvroTypes elementType, string? elementGenericType, string name, object? options)
     {
+        StringBuilder dimensionBuilder = new StringBuilder();
+        for (int i = 0; i < dimensions; i++)
+        {
+            dimensionBuilder.Append("[]");
+        }
         if (options != null)
         {
             PropertyInfo[] properties = options.GetType().GetProperties();
@@ -41,13 +46,32 @@ public class GoLanguageFeatures : ILanguageFeature
             if (jsonPropertyNameProperty != null)
             {
                 string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
-                return @$"{name.ToPascalCase()} []{GetType(elementType)} `avro:""{jsonPropertyName}""`";
+                if (elementType != AvroTypes.MAP)
+                {
+                    return @$"{name.ToPascalCase()} {dimensionBuilder.ToString()}{GetType(elementType)} `avro:""{jsonPropertyName}""`";
+                }
+                else
+                {
+                    return @$"{name.ToPascalCase()} {dimensionBuilder.ToString()}map[{elementGenericType}]any `avro:""{jsonPropertyName}""`";
+                }
             }
         }
-        return $"{name.ToPascalCase()} []{GetType(elementType)}";
+        if (elementType != AvroTypes.MAP)
+        {
+            return $"{name.ToPascalCase()} {dimensionBuilder.ToString()}{GetType(elementType)}";
+        }
+        else
+        {
+            return $"{name.ToPascalCase()} {dimensionBuilder.ToString()}map[{elementGenericType}]any";
+        }
     }
-    public string GetArray(string elementType, string name, object? options)
+    public string GetArray(int dimensions, string elementType, string name, object? options)
     {
+        StringBuilder dimensionBuilder = new StringBuilder();
+        for (int i = 0; i < dimensions; i++)
+        {
+            dimensionBuilder.Append("[]");
+        }
         if (options != null)
         {
             PropertyInfo[] properties = options.GetType().GetProperties();
@@ -55,10 +79,10 @@ public class GoLanguageFeatures : ILanguageFeature
             if (jsonPropertyNameProperty != null)
             {
                 string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
-                return @$"{name.ToPascalCase()} []{elementType} `avro:""{jsonPropertyName}""`";
+                return @$"{name.ToPascalCase()} {dimensionBuilder.ToString()}{elementType} `avro:""{jsonPropertyName}""`";
             }
         }
-        return $"{name.ToPascalCase()} []{elementType}";
+        return $"{name.ToPascalCase()} {dimensionBuilder.ToString()}{elementType}";
     }
 
     public string GetCodec(string name, string schema, object? options)

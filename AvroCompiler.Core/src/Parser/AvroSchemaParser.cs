@@ -97,14 +97,18 @@ public class AvroSchemaParser
                             }
                             else
                             {
-                                if (IsArrayType(field.Type, out string? __type))
+                                int dimensions = 1;
+                                string? arrayItemType = null;
+                                string? itemGenericType = null;
+                                if (IsArrayType(field.Type, ref dimensions, ref arrayItemType, ref itemGenericType))
                                 {
-                                    if (!HasValue(__type)) continue;
                                     fields.Add(
                                         MustNeverBeNull(field.Name),
                                         new AvroArray(
                                             MustNeverBeNull(field.Name),
-                                            MustNeverBeNull(__type),
+                                            dimensions,
+                                            MustNeverBeNull(arrayItemType),
+                                            itemGenericType,
                                             languageFeature
                                         )
                                     );
@@ -195,7 +199,7 @@ public class AvroSchemaParser
                     message.Key,
                     MustNeverBeNull(message.Value.Request).ToDictionary(x => MustNeverBeNull(x.Name), x => MustNeverBeNull(x.Type)),
                     MustNeverBeNull(message.Value.Response),
-                    MaybeSafelyNull(message.Value.Errors)?.FirstOrDefault(),
+                    MayBeSafelyNull(message.Value.Errors)?.FirstOrDefault(),
                     languageFeature
                 );
             }

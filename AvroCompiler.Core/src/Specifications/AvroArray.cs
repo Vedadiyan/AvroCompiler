@@ -1,12 +1,17 @@
 using AvroCompiler.Core.Abstraction;
 using AvroCompiler.Core.Contants;
 
+using static AvroCompiler.Core.Lexicon;
+
 namespace AvroCompiler.Core.Specifications;
 public class AvroArray : AvroElement
 {
+    public int Dimensions { get; }
     public AvroTypes ElementType { get; }
-    public AvroArray(string name, string elementType, ILanguageFeature languageFeature) : base(name, new string[] { elementType }, languageFeature)
+    public string? ElementGenericType { get; }
+    public AvroArray(string name, int dimensions, string elementType, string? elementGenericType, ILanguageFeature languageFeature) : base(name, new string[] { elementType, MayBeSafelyNull(elementGenericType) }, languageFeature)
     {
+        Dimensions = dimensions;
         if (Enum.TryParse<AvroTypes>(elementType.ToUpper(), out AvroTypes type))
         {
             ElementType = type;
@@ -15,17 +20,18 @@ public class AvroArray : AvroElement
         {
             ElementType = AvroTypes.REFERENCE;
         }
+        ElementGenericType = elementGenericType;
     }
 
     public override string Template()
     {
         if (ElementType != AvroTypes.REFERENCE)
         {
-            return LanguageFeature.GetArray(ElementType, Name, new { JsonPropertyName = Name });
+            return LanguageFeature.GetArray(Dimensions, ElementType, ElementGenericType, Name, new { JsonPropertyName = Name });
         }
         else
         {
-            return LanguageFeature.GetArray(TypeNames![0], Name, new { JsonPropertyName = Name });
+            return LanguageFeature.GetArray(Dimensions, TypeNames![0], Name, new { JsonPropertyName = Name });
         }
     }
 }

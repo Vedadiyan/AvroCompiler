@@ -32,7 +32,7 @@ public class Lexicon
         }
         return default!;
     }
-    public static T MaybeSafelyNull<T>(T? obj)
+    public static T MayBeSafelyNull<T>(T? obj)
     {
         if (obj != null)
         {
@@ -48,24 +48,48 @@ public class Lexicon
     {
         return jsonElement?.ValueKind == JsonValueKind.String;
     }
-    public static bool IsArrayType(JsonElement? jsonElement, out string? arrayItem)
+    public static bool IsArrayType(JsonElement? jsonElement, ref int dimenstions, ref string? arrayItemType, ref string? itemGenericType)
     {
         if (jsonElement?.TryGetProperty("items", out JsonElement item) == true)
         {
-            string? itemType = item.GetString();
-            if (itemType != null)
+            if (item.ValueKind == JsonValueKind.String)
             {
-                arrayItem = itemType;
-                return true;
+                string? itemType = item.GetString();
+                if (itemType != null)
+                {
+                    arrayItemType = itemType;
+                    return true;
+                }
+            }
+            else if (item.ValueKind == JsonValueKind.Object)
+            {
+                string tmp = item.GetRawText();
+                if (item.TryGetProperty("values", out JsonElement _item))
+                {
+                    arrayItemType = "map";
+                    itemGenericType = MustNeverBeNull(_item.GetString());
+                    return true;
+                }
+                else
+                {
+                    dimenstions++;
+                    IsArrayType(item, ref dimenstions, ref arrayItemType, ref itemGenericType);
+                    return true;
+                }
+            }
+            else
+            {
+                ThrowIfUnpredictable();
             }
         }
-        arrayItem = null;
         return false;
     }
     public static void ThrowIfOtherwise(params bool[] args)
     {
-        foreach(var i in args) {
-            if(!i) {
+        foreach (var i in args)
+        {
+            if (!i)
+            {
                 throw new ArgumentException();
             }
         }

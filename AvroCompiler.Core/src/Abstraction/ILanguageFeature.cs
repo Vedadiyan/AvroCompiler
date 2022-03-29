@@ -13,8 +13,8 @@ public interface ILanguageFeature
     string GetField(string avroType, AvroTypes actualAvroType, string name, object? options);
     string GetEnum(string name, string[] symbols, object? options);
     string GetFixed(string name, object? options);
-    string GetArray(AvroTypes elementType, string name, object? options);
-    string GetArray(string elementType, string name, object? options);
+    string GetArray(int dimensions, AvroTypes elementType, string? elementGenericType, string name, object? options);
+    string GetArray(int dimensions, string elementType, string name, object? options);
     string GetMap(AvroTypes elementType, string name, object? options);
     string GetMap(string elementType, string name, object? options);
     string GetRecord(string name, string[] fields, object? options);

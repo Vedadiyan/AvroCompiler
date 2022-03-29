@@ -3,45 +3,7 @@
  */
 @namespace("org.apache.avro.test")
 protocol Simple {
-
-  import idl url("https://raw.githubusercontent.com/apache/avro/master/lang/java/compiler/src/test/idl/input/interop.avdl");
-
-  @aliases(["org.foo.KindOf"])
-  enum Kind {
-    FOO,
-    BAR, // the bar enum value
-    BAZ
+  record Test {
+    array<array<array<map<int>>>> value; 
   }
-
-  fixed MD5(16);
-
-  record TestRecord {
-    @order("ignore")
-    string name;
-
-    @order("descending")
-    Kind kind;
-
-    MD5 hash;
-
-    union { MD5, null} @aliases(["hash"]) nullableHash;
-
-    array<long> arrayOfLongs;
-  }
-
-  error TestError {
-    string message;
-  }
-
-  string hello(string greeting);
-  TestRecord echo(TestRecord `record`);
-  TestRecord echo2(TestRecord `record`) throws TestError;
-  void echo3(TestRecord `record`) throws TestError;
-  TestRecord echo4() throws TestError;
-  void echo5();
-  void echo6() throws TestError;
-  int add(int arg1, int arg2);
-  bytes echoBytes(bytes data);
-  void `error`() throws TestError;
-  void ping() oneway;
 }
