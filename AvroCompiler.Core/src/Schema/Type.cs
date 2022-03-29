@@ -8,6 +8,8 @@ public class Type
     public string? TypeName { get; set; }
     [JsonPropertyName("name")]
     public string? Name { get; set; }
+    [JsonPropertyName("namespace")]
+    public string? Namespace { get; set; }
     [JsonPropertyName("symbols")]
     public List<string>? Symbols { get; set; }
     [JsonPropertyName("order")]

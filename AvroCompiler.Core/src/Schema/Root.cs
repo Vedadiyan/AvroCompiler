@@ -6,12 +6,12 @@ public class Root
 {
     [JsonPropertyName("protocol")]
     public string? Protocol { get; set; }
-     [JsonPropertyName("namespace")]
+    [JsonPropertyName("namespace")]
     public string? Namespace { get; set; }
-     [JsonPropertyName("doc")]
+    [JsonPropertyName("doc")]
     public string? Doc { get; set; }
-     [JsonPropertyName("types")]
+    [JsonPropertyName("types")]
     public List<Schema.Type>? Types { get; set; }
-     [JsonPropertyName("messages")]
+    [JsonPropertyName("messages")]
     public Dictionary<string, Message>? Messages { get; set; }
 }

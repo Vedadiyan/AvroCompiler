@@ -1,7 +1,6 @@
 using System.Text;
 using System.Text.Json;
 using AvroCompiler.Core.Abstraction;
-using AvroCompiler.Core.Contants;
 using AvroCompiler.Core.Deserialization;
 using AvroCompiler.Core.Schema;
 using AvroCompiler.Core.Specifications;
@@ -25,7 +24,7 @@ public class AvroSchemaParser
         AvprDeserializer avprDeserializer = new AvprDeserializer(avprData);
         Root root = avprDeserializer.GetRoot();
         AvprDeserializer.FlatenReferences(root);
-        if (root != null)
+        if (Lexicon.HasValue(root))
         {
             preview.AppendLine(languageFeature.GetNamespace(root.Protocol!));
             preview.AppendLine(languageFeature.GetImports());
@@ -42,98 +41,151 @@ public class AvroSchemaParser
     }
     private IEnumerable<AvroElement> parse(Root root)
     {
-        if (root.Types != null)
+        Lexicon.ThrowIfOtherwise(Lexicon.HasValue(root.Types));
+        foreach (var type in Lexicon.MustNeverBeNull(root.Types))
         {
-            foreach (var type in root.Types)
+            Lexicon.ThrowIfOtherwise(Lexicon.HasValue(type.Name), Lexicon.HasValue(type.TypeName));
+            switch (type.TypeName)
             {
-                if (type.Name != null && type.TypeName != null)
-                {
-                    switch (type.TypeName)
+                case "record":
+                case "error":
+                case "object":
                     {
-                        case "record":
-                        case "error":
-                        case "object":
+                        if (!Lexicon.HasValue(type.Fields))
+                        {
+                            break;
+                        }
+                        Dictionary<string, AvroElement> fields = new Dictionary<string, AvroElement>();
+                        foreach (var field in Lexicon.MustNeverBeNull(type.Fields))
+                        {
+                            if (!Lexicon.HasValue(field.Name) || !Lexicon.HasValue(field.Type))
                             {
-                                if (type.Fields != null)
+                                continue;
+                            }
+                            if (Lexicon.IsUnionType(field.Type))
+                            {
+                                string[]? typeNames = Lexicon.MustNeverBeNull(field.Type).Deserialize<string[]>();
+                                if (Lexicon.HasValue(typeNames))
                                 {
-                                    Dictionary<string, AvroElement> fields = new Dictionary<string, AvroElement>();
-                                    foreach (var field in type.Fields)
+                                    fields.Add(
+                                        Lexicon.MustNeverBeNull(field.Name),
+                                        new AvroField(
+                                            Lexicon.MustNeverBeNull(field.Name),
+                                            Lexicon.MustNeverBeNull(typeNames),
+                                            languageFeature
+                                        )
+                                    );
+                                }
+                            }
+                            else if (Lexicon.IsFieldType(field.Type))
+                            {
+                                fields.Add(
+                                    Lexicon.MustNeverBeNull(field.Name),
+                                    new AvroField(
+                                        Lexicon.MustNeverBeNull(field.Name),
+                                        new string[] {
+                                                    Lexicon.MustNeverBeNull(
+                                                        Lexicon.MustNeverBeNull(field.Type).GetString()
+                                                    )
+                                        },
+                                        languageFeature
+                                    )
+                                );
+                            }
+                            else
+                            {
+                                if (Lexicon.IsArrayType(field.Type, out string? __type))
+                                {
+                                    if (Lexicon.HasValue(__type))
                                     {
-                                        if (field.Name != null)
+                                        fields.Add(
+                                            Lexicon.MustNeverBeNull(field.Name),
+                                            new AvroArray(
+                                                Lexicon.MustNeverBeNull(field.Name),
+                                                Lexicon.MustNeverBeNull(__type),
+                                                languageFeature
+                                            )
+                                        );
+                                    }
+                                }
+                                else
+                                {
+                                    if (Lexicon.MustNeverBeNull(field.Type).TryGetProperty("type", out JsonElement types))
+                                    {
+                                        if (Lexicon.IsUnionType(types))
                                         {
-                                            if (field.Type != null)
+                                            string[]? typeNames = types.Deserialize<string[]>();
+                                            if (Lexicon.HasValue(typeNames))
                                             {
-                                                if (field.Type.Value.ValueKind == JsonValueKind.Array)
-                                                {
-                                                    string[] typeNames = field.Type.Value.Deserialize<string[]>()!;
-                                                    fields.Add(field.Name, new AvroField(field.Name, typeNames, languageFeature));
-                                                }
-                                                else if (field.Type.Value.ValueKind == JsonValueKind.String)
-                                                {
-                                                    fields.Add(field.Name, new AvroField(field.Name, new string[] { field.Type.Value.GetString()! }, languageFeature));
-                                                }
-                                                else
-                                                {
-                                                    if (field.Type.Value.TryGetProperty("items", out JsonElement items))
-                                                    {
-                                                        string? __type = items.GetString();
-                                                        if (__type != null)
-                                                        {
-                                                            fields.Add(field.Name, new AvroArray(field.Name, __type, languageFeature));
-                                                        }
-                                                    }
-                                                    else
-                                                    {
-                                                        if (field.Type.Value.TryGetProperty("type", out JsonElement types))
-                                                        {
-                                                            if (types.ValueKind == JsonValueKind.Array)
-                                                            {
-                                                                string[] typeNames = types.Deserialize<string[]>()!;
-                                                                fields.Add(field.Name, new AvroField(field.Name, typeNames, languageFeature));
-                                                            }
-                                                            else if (types.ValueKind == JsonValueKind.String)
-                                                            {
-                                                                fields.Add(field.Name, new AvroField(field.Name, new string[] { types.GetString()! }, languageFeature));
-                                                            }
-                                                            else
-                                                            {
-                                                                throw new ArgumentException();
-                                                            }
-                                                        }
-                                                    }
-                                                }
+                                                fields.Add(
+                                                    Lexicon.MustNeverBeNull(field.Name),
+                                                    new AvroField(
+                                                        Lexicon.MustNeverBeNull(field.Name),
+                                                        Lexicon.MustNeverBeNull(typeNames),
+                                                        languageFeature
+                                                    )
+                                                );
+
                                             }
                                         }
+                                        else if (Lexicon.IsFieldType(types))
+                                        {
+                                            fields.Add(
+                                                Lexicon.MustNeverBeNull(field.Name),
+                                                new AvroField(
+                                                    Lexicon.MustNeverBeNull(field.Name),
+                                                    new string[] {
+                                                                Lexicon.MustNeverBeNull(
+                                                                    Lexicon.MustNeverBeNull(types).GetString()
+                                                                )
+                                                    },
+                                                    languageFeature
+                                                )
+                                            );
+                                        }
+                                        else
+                                        {
+                                            Lexicon.ThrowIfUnpredictable();
+                                        }
                                     }
-                                    yield return new AvroRecord(type.Name, fields, type.RawObject.GetRawText(), languageFeature);
                                 }
-                                break;
                             }
-                        case "enum":
-                            {
-                                if (type.Symbols != null)
-                                {
-                                    yield return new AvroEnum(type.Name, type.Symbols.ToArray(), languageFeature);
-                                }
-                                break;
-                            }
-                        case "fixed":
-                            {
-                                if (type.Size != null)
-                                {
-                                    yield return new AvroFixed(type.Name, type.Size.Value, languageFeature);
-                                }
-                                break;
-                            }
+                        }
+                        yield return new AvroRecord(Lexicon.MustNeverBeNull(type.Name), fields, type.RawObject.GetRawText(), languageFeature);
+                        break;
                     }
-                }
+                case "enum":
+                    {
+                        if (Lexicon.HasValue(type.Symbols))
+                        {
+                            yield return new AvroEnum(Lexicon.MustNeverBeNull(type.Name), Lexicon.MustNeverBeNull(type.Symbols).ToArray(), languageFeature);
+                        }
+                        break;
+                    }
+                case "fixed":
+                    {
+                        if (Lexicon.HasValue(type.Size))
+                        {
+                            yield return new AvroFixed(Lexicon.MustNeverBeNull(type.Name), Lexicon.MustNeverBeNull(type.Size), languageFeature);
+                        }
+                        break;
+                    }
             }
+
         }
-        if (root.Messages != null)
+
+        if (Lexicon.HasValue(root.Messages))
         {
-            foreach (var message in root.Messages)
+            foreach (var message in Lexicon.MustNeverBeNull(root.Messages))
             {
-                yield return new AvroMessage(message.Key, message.Value.Request!.ToDictionary(x => x.Name!, x => x.Type)!, message.Value.Response!, message.Value.Errors?.FirstOrDefault(), languageFeature);
+                yield return
+                new AvroMessage(
+                    message.Key,
+                    Lexicon.MustNeverBeNull(message.Value.Request).ToDictionary(x => Lexicon.MustNeverBeNull(x.Name), x => Lexicon.MustNeverBeNull(x.Type)),
+                    Lexicon.MustNeverBeNull(message.Value.Response),
+                    Lexicon.MaybeSafelyNull(message.Value.Errors)?.FirstOrDefault(),
+                    languageFeature
+                );
             }
         }
     }
