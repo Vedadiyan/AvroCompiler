@@ -27,7 +27,7 @@ public class AvroSchemaParser
         AvprDeserializer.FlatenReferences(root);
         if (root != null)
         {
-            preview.AppendLine(languageFeature.GetNamespace(root.protocol!));
+            preview.AppendLine(languageFeature.GetNamespace(root.Protocol!));
             preview.AppendLine(languageFeature.GetImports());
             foreach (var i in parse(root))
             {
@@ -42,58 +42,58 @@ public class AvroSchemaParser
     }
     private IEnumerable<AvroElement> parse(Root root)
     {
-        if (root.types != null)
+        if (root.Types != null)
         {
-            foreach (var type in root.types)
+            foreach (var type in root.Types)
             {
-                if (type.name != null && type.type != null)
+                if (type.Name != null && type.TypeName != null)
                 {
-                    switch (type.type)
+                    switch (type.TypeName)
                     {
                         case "record":
                         case "error":
                         case "object":
                             {
-                                if (type.fields != null)
+                                if (type.Fields != null)
                                 {
                                     Dictionary<string, AvroElement> fields = new Dictionary<string, AvroElement>();
-                                    foreach (var field in type.fields)
+                                    foreach (var field in type.Fields)
                                     {
-                                        if (field.name != null)
+                                        if (field.Name != null)
                                         {
-                                            if (field.type != null)
+                                            if (field.Type != null)
                                             {
-                                                if (field.type.Value.ValueKind == JsonValueKind.Array)
+                                                if (field.Type.Value.ValueKind == JsonValueKind.Array)
                                                 {
-                                                    string[] typeNames = field.type.Value.Deserialize<string[]>()!;
-                                                    fields.Add(field.name, new AvroField(field.name, typeNames, languageFeature));
+                                                    string[] typeNames = field.Type.Value.Deserialize<string[]>()!;
+                                                    fields.Add(field.Name, new AvroField(field.Name, typeNames, languageFeature));
                                                 }
-                                                else if (field.type.Value.ValueKind == JsonValueKind.String)
+                                                else if (field.Type.Value.ValueKind == JsonValueKind.String)
                                                 {
-                                                    fields.Add(field.name, new AvroField(field.name, new string[] { field.type.Value.GetString()! }, languageFeature));
+                                                    fields.Add(field.Name, new AvroField(field.Name, new string[] { field.Type.Value.GetString()! }, languageFeature));
                                                 }
                                                 else
                                                 {
-                                                    if (field.type.Value.TryGetProperty("items", out JsonElement items))
+                                                    if (field.Type.Value.TryGetProperty("items", out JsonElement items))
                                                     {
                                                         string? __type = items.GetString();
                                                         if (__type != null)
                                                         {
-                                                            fields.Add(field.name, new AvroArray(field.name, __type, languageFeature));
+                                                            fields.Add(field.Name, new AvroArray(field.Name, __type, languageFeature));
                                                         }
                                                     }
                                                     else
                                                     {
-                                                        if (field.type.Value.TryGetProperty("type", out JsonElement types))
+                                                        if (field.Type.Value.TryGetProperty("type", out JsonElement types))
                                                         {
                                                             if (types.ValueKind == JsonValueKind.Array)
                                                             {
                                                                 string[] typeNames = types.Deserialize<string[]>()!;
-                                                                fields.Add(field.name, new AvroField(field.name, typeNames, languageFeature));
+                                                                fields.Add(field.Name, new AvroField(field.Name, typeNames, languageFeature));
                                                             }
                                                             else if (types.ValueKind == JsonValueKind.String)
                                                             {
-                                                                fields.Add(field.name, new AvroField(field.name, new string[] { types.GetString()! }, languageFeature));
+                                                                fields.Add(field.Name, new AvroField(field.Name, new string[] { types.GetString()! }, languageFeature));
                                                             }
                                                             else
                                                             {
@@ -105,23 +105,23 @@ public class AvroSchemaParser
                                             }
                                         }
                                     }
-                                    yield return new AvroRecord(type.name, fields, type.RawObject.GetRawText(), languageFeature);
+                                    yield return new AvroRecord(type.Name, fields, type.RawObject.GetRawText(), languageFeature);
                                 }
                                 break;
                             }
                         case "enum":
                             {
-                                if (type.symbols != null)
+                                if (type.Symbols != null)
                                 {
-                                    yield return new AvroEnum(type.name, type.symbols.ToArray(), languageFeature);
+                                    yield return new AvroEnum(type.Name, type.Symbols.ToArray(), languageFeature);
                                 }
                                 break;
                             }
                         case "fixed":
                             {
-                                if (type.size != null)
+                                if (type.Size != null)
                                 {
-                                    yield return new AvroFixed(type.name, type.size.Value, languageFeature);
+                                    yield return new AvroFixed(type.Name, type.Size.Value, languageFeature);
                                 }
                                 break;
                             }
@@ -129,11 +129,11 @@ public class AvroSchemaParser
                 }
             }
         }
-        if (root.messages != null)
+        if (root.Messages != null)
         {
-            foreach (var message in root.messages)
+            foreach (var message in root.Messages)
             {
-                yield return new AvroMessage(message.Key, message.Value.request!.ToDictionary(x => x.name!, x => x.type)!, message.Value.response!, message.Value.errors?.FirstOrDefault(), languageFeature);
+                yield return new AvroMessage(message.Key, message.Value.Request!.ToDictionary(x => x.Name!, x => x.Type)!, message.Value.Response!, message.Value.Errors?.FirstOrDefault(), languageFeature);
             }
         }
     }

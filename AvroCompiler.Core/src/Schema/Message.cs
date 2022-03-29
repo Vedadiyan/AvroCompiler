@@ -3,9 +3,12 @@ using System.Text.Json.Serialization;
 
 public class Message
 {
-    public List<Request>? request { get; set; }
-    public string? response { get; set; }
-    public List<string>? errors { get; set; }
+    [JsonPropertyName("request")]
+    public List<Request>? Request { get; set; }
+    [JsonPropertyName("response")]
+    public string? Response { get; set; }
+    [JsonPropertyName("errors")]
+    public List<string>? Errors { get; set; }
     [JsonPropertyName("one-way")]
     public bool OneWay { get; set; }
 }

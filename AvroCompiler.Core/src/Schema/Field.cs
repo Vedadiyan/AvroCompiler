@@ -1,9 +1,13 @@
 namespace AvroCompiler.Core.Schema;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 public class Field
 {
-    public string? name { get; set; }
-    public JsonElement? type { get; set; }
-    public List<string>? aliases { get; set; }
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
+    [JsonPropertyName("type")]
+    public JsonElement? Type { get; set; }
+    [JsonPropertyName("aliases")]
+    public List<string>? Aliases { get; set; }
 }
