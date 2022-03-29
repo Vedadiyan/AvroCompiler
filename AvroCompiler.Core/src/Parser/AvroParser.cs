@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using AvroCompiler.Core.Abstraction;
 using AvroCompiler.Core.Contants;
+using AvroCompiler.Core.Deserialization;
 using AvroCompiler.Core.Schema;
 using AvroCompiler.Core.Specifications;
 
@@ -21,25 +22,9 @@ public class AvroSchemaParser
     public async Task<string> Parse()
     {
         StringBuilder preview = new StringBuilder();
-        JsonDocument jsonDocument = JsonSerializer.Deserialize<JsonDocument>(avprData)!;
-        Root root = new Root();
-        if(jsonDocument.RootElement.TryGetProperty("protocol", out JsonElement protocol)) {
-            root.protocol = protocol.GetString();
-        }
-        if(jsonDocument.RootElement.TryGetProperty("namespace", out JsonElement @namespace)) {
-            root.@namespace = @namespace.GetString();
-        }
-        if(jsonDocument.RootElement.TryGetProperty("doc", out JsonElement doc)) {
-            root.doc = doc.GetString();
-        }
-        if(jsonDocument.RootElement.TryGetProperty("types", out JsonElement types)) {
-            root.types = types.EnumerateArray().Select(x=> x).ToList();
-            root.typesDeserialized = types.Deserialize<List<Schema.Type>>(new JsonSerializerOptions {DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull});
-        }
-        if(jsonDocument.RootElement.TryGetProperty("messages", out JsonElement messages)) {
-            root.messages = messages.Deserialize<Dictionary<string, Message>>();
-        }
-        loadReferences(root!);
+        AvprDeserializer avprDeserializer = new AvprDeserializer(avprData);
+        Root root = avprDeserializer.GetRoot();
+        AvprDeserializer.FlatenReferences(root);
         if (root != null)
         {
             preview.AppendLine(languageFeature.GetNamespace(root.protocol!));
@@ -59,9 +44,8 @@ public class AvroSchemaParser
     {
         if (root.types != null)
         {
-            for(int i = 0; i < root.types.Count; i++)
+            foreach (var type in root.types)
             {
-                Schema.Type type = root.typesDeserialized![i];
                 if (type.name != null && type.type != null)
                 {
                     switch (type.type)
@@ -121,7 +105,7 @@ public class AvroSchemaParser
                                             }
                                         }
                                     }
-                                    yield return new AvroRecord(type.name, fields, root.types[i].GetRawText(), languageFeature);
+                                    yield return new AvroRecord(type.name, fields, type.RawObject.GetRawText(), languageFeature);
                                 }
                                 break;
                             }
@@ -150,51 +134,6 @@ public class AvroSchemaParser
             foreach (var message in root.messages)
             {
                 yield return new AvroMessage(message.Key, message.Value.request!.ToDictionary(x => x.name!, x => x.type)!, message.Value.response!, message.Value.errors?.FirstOrDefault(), languageFeature);
-            }
-        }
-    }
-    private async void loadReferences(Root root)
-    {
-        if (root.types != null)
-        {
-            Dictionary<string, (Schema.Type Value, JsonElement RawValue)> types = root.types.Select(x =>
-            {
-                Schema.Type type = x.Deserialize<Schema.Type>() ?? throw new ArgumentNullException();
-                string name = "";
-                if(x.TryGetProperty("namespace", out JsonElement jsonElement)) {
-                    name = jsonElement.GetString() + ".";
-                }
-                name = type.name ?? throw new ArgumentNullException();
-                return new { Name = name, Value = type, RawValue = x };
-            })?.ToDictionary(x => x.Name, x => (x.Value, x.RawValue))!;
-            for (int i = 0; i < root.types.Count; i++)
-            {
-                Schema.Type deserializedType = root.types[i].Deserialize<Schema.Type>()!;
-                if (Enum.TryParse<AvroTypes>(deserializedType.type.ToUpper(), out AvroTypes avroTypes) && avroTypes == AvroTypes.RECORD)
-                {
-                    lazyLoad(types, deserializedType.fields!);
-                    root.types[i] = JsonSerializer.Deserialize<JsonElement>(JsonSerializer.Serialize(deserializedType));
-                }
-            }
-
-
-        }
-    }
-    private void lazyLoad(Dictionary<string, (Schema.Type Value, JsonElement RawValue)> values, List<Field>? fields)
-    {
-        if (fields != null)
-        {
-            foreach (var field in fields)
-            {
-                if (field.type?.ValueKind == JsonValueKind.String)
-                {
-                    string fieldType = field.type?.GetString()!;
-                    if (!Enum.TryParse<AvroTypes>(fieldType, out AvroTypes avroTypes) || avroTypes == AvroTypes.RECORD)
-                    {
-                        lazyLoad(values, values[fieldType].Value.fields!);
-                        field.type = values[fieldType].RawValue;
-                    }
-                }
             }
         }
     }

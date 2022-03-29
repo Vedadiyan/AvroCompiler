@@ -39,14 +39,7 @@ type TestRecord struct {
 
 
 func (testError TestError) Codec() (*goavro.Codec, error) {
-    avroSchemaInBase64 := "{
-    "type" : "error",
-    "name" : "TestError",
-    "fields" : [ {
-      "name" : "message",
-      "type" : "string"
-    } ]
-  }"
+    avroSchemaInBase64 := "{"type":"error","name":"TestError","symbols":null,"order":null,"aliases":null,"size":null,"fields":[{"name":"message","type":"string","aliases":null}]}"
     if value, err := base64.StdEncoding.DecodeString(avroSchemaInBase64); err == nil {
         if codec, err := goavro.NewCodec(string(value)); err == nil {
             return codec, nil
