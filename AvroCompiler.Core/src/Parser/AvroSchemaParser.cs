@@ -40,7 +40,13 @@ public class AvroSchemaParser
                 preview.AppendLine(i.Template());
             }
         }
-        return await languageFeature.Format(preview.ToString());
+        StringBuilder finalCode = new StringBuilder();
+        foreach(var i in preview.ToString().Split("\r\n")) {
+            if(!string.IsNullOrWhiteSpace(i)) {
+                finalCode.AppendLine(i);
+            }
+        }
+        return await languageFeature.Format(finalCode.ToString());
     }
     private IEnumerable<AvroElement> parse(Root root)
     {
