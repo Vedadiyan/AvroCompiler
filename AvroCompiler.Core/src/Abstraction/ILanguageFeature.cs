@@ -4,6 +4,7 @@ namespace AvroCompiler.Core.Abstraction;
 
 public interface ILanguageFeature
 {
+    string GetComments();
     string GetType(AvroTypes avroType);
     string GetNamespace(string @namespace);
     string GetImports();

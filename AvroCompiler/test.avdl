@@ -1,10 +1,11 @@
+@register("")
 protocol Expedia {
     record Request {
-      array<array<array<int>>> test;
+      array<array<array<array<int>>>> test;
+      map<string> a;
     }
     record Response {
       string results;
     }
-
     Response GetResults(Request request);
 }

@@ -28,6 +28,7 @@ public class AvroSchemaParser
         AvprDeserializer.FlatenReferences(root);
         if (HasValue(root))
         {
+            preview.Append(languageFeature.GetComments());
             preview.AppendLine(languageFeature.GetNamespace(root.Protocol!));
             preview.AppendLine(languageFeature.GetImports());
             foreach (var i in parse(root))
