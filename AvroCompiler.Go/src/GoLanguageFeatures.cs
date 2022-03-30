@@ -253,62 +253,27 @@ import (
         if (types.Add(name))
         {
             StringBuilder stringBuilder = new StringBuilder();
-            //StringBuilder constructor = new StringBuilder();
+            StringBuilder constructor = new StringBuilder();
             string namePascalCase = name.ToPascalCase();
             string nameCamelCase = name.ToCamelCase();
             stringBuilder.AppendLine($"type {namePascalCase} struct {{");
+            string constructorFunction = @$"func new{namePascalCase}(value map[string]any) {namePascalCase} {{
+                {nameCamelCase} := {namePascalCase} {{}}
+                $next
+                return {nameCamelCase}
+            }}";
             foreach (var i in fields)
             {
                 stringBuilder.AppendLine($"    {i.Template()}");
-                // if (i is AvroField avroField)
-                // {
-                //     if (avroField.AvroType == AvroTypes.REFERENCE)
-                //     {
-                //         constructor.AppendLine(@$"
-                //             if value, ok := args[""{i.Name.ToCamelCase()}""].(map[string]any); ok {{
-                //                 {nameCamelCase}.{i.Name.ToPascalCase} = new{avroField.TypeNames![1]}(value)
-                //             }} 
-                //         ");
-                //     }
-                //     else if (avroField.AvroType == AvroTypes.MAP)
-                //     {
-                //         if (Enum.TryParse<AvroTypes>(avroField.TypeNames![1].ToUpper(), out AvroTypes type))
-                //         {
-                //             constructor.AppendLine(@$"
-                //                 if value, ok := args[""{i.Name.ToCamelCase()}""].(map[{GetType(type)}]any); ok {{
-                //                     {nameCamelCase}.{i.Name.ToPascalCase} = value
-                //                 }} 
-                //             ");
-                //         }
-                //         else
-                //         {
-                //             throw new Exception("Invalid Map Type");
-                //         }
-                //     }
-                //     else
-                //     {
-                //         constructor.AppendLine(@$"
-                //             if value, ok := args[""{i.Name.ToCamelCase()}""].({GetType(avroField.AvroType)}); ok {{
-                //                 {nameCamelCase}.{i.Name.ToPascalCase()} = value
-                //             }} 
-                //         ");
-                //     }
-                // }
-                // else if (i is AvroArray avroArray)
-                // {
-                //     for (int dimension = 0; dimension < avroArray.Dimensions; dimension++)
-                //     {
-                //         StringBuilder arrayBuilder = new StringBuilder();
-                //         for (int x = dimension; x < avroArray.Dimensions; x++)
-                //         {
-                //             arrayBuilder.Append("[]");
-                //         }
-                  
-                //     }
-                // }
+                if(i is AvroField avroField) {
+                    constructor.AppendLine(new AutoMappers(avroField.AvroType, name, avroField.Name, GetType).GetBackwardMapper());
+                }
+                else if (i is AvroArray avroArray) {
+                     constructor.AppendLine(new AutoMappers(name, avroArray.Name, avroArray.TypeNames![0], avroArray.ElementGenericType, avroArray.Dimensions, GetType).GetBackwardMapper());
+                }
             }
-            //var test = constructor.ToString();
             stringBuilder.AppendLine("}");
+            stringBuilder.AppendLine(constructorFunction.Replace("$next", constructor.ToString()));
             return stringBuilder.ToString();
         }
         return string.Empty;

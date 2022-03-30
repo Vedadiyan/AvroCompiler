@@ -2,6 +2,7 @@ namespace AvroCompiler.Core.Contants;
 [Flags]
 public enum AvroTypes
 {
+    UNDEFINED = 0,
     RECORD = 1 << 1,
     OBJECT = 1 << 1,
     ARRAY = 1 << 2,
