@@ -21,7 +21,8 @@ public class AutoMappers
         this.fieldName = fieldName;
         this.getType = getType;
     }
-    public AutoMappers(string recordName, string fieldName, string fieldItem, string fieldGenericParameter, int dimension, GetType getType) {
+    public AutoMappers(string recordName, string fieldName, string fieldItem, string fieldGenericParameter, int dimension, GetType getType)
+    {
         this.recordName = recordName;
         this.fieldName = fieldName;
         this.fieldItem = fieldItem;
@@ -42,10 +43,12 @@ public class AutoMappers
     }
     public string GetBackwardMapper()
     {
-        if(avroType != AvroTypes.UNDEFINED) {
+        if (avroType != AvroTypes.UNDEFINED)
+        {
             return getBackwardedPrimitiveNonArrayType();
         }
-        else {
+        else
+        {
             return getBackwardedPimitiveArrayType();
         }
     }
@@ -59,13 +62,26 @@ public class AutoMappers
     }
     private string getBackwardedPrimitiveNonArrayType()
     {
-        return @$"
+        if ((avroType | AvroTypes.REFERENCE) != AvroTypes.REFERENCE)
+        {
+            return @$"
             if value, ok := value[""{fieldName}""].({getType(avroType)}); ok {{
                 {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = value
             }} else {{
                 // fmt.println(""WARNING: Type mismatch for"", ""{fieldName}"")
             }}
         ";
+        }
+        else
+        {
+            return @$"
+            if value, ok := value[""{fieldName}""].({fieldName.ToPascalCase()}); ok {{
+                {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = value
+            }} else {{
+                // fmt.println(""WARNING: Type mismatch for"", ""{fieldName}"")
+            }}
+        ";
+        }
     }
     public string getBackwardedPimitiveArrayType()
     {
@@ -106,7 +122,8 @@ public class AutoMappers
                         tmp{d}[index] = value
                     ";
                 }
-                else {
+                else
+                {
                     return @$"
                         tmp{d}[index] = new{recordName.ToPascalCase()}(value)
                     ";

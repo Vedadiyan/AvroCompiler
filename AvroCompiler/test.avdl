@@ -2,7 +2,11 @@
 protocol Expedia {
     record Request {
       array<array<array<array<int>>>> test;
-      map<string> a;
+      Kind kind;
+      Response response;
+    }
+    enum Kind {
+      OK
     }
     record Response {
       string results;

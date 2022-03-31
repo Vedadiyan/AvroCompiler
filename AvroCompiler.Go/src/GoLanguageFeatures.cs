@@ -167,10 +167,10 @@ func ({name.ToCamelCase()} {name.ToPascalCase()}) Codec() (*goavro.Codec, error)
             if (jsonPropertyNameProperty != null)
             {
                 string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
-                return @$"{name.ToPascalCase()} {nullable(actualType)}{type} `avro:""{jsonPropertyName}""`";
+                return @$"{name.ToPascalCase()} {nullable(actualType)}{type.ToPascalCase()} `avro:""{jsonPropertyName}""`";
             }
         }
-        return $"{name.ToPascalCase()} {nullable(actualType)}{type}";
+        return $"{name.ToPascalCase()} {nullable(actualType)}{type.ToPascalCase()}";
     }
 
     public string GetFixed(string name, object? options)
