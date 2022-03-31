@@ -143,21 +143,20 @@ public class AvroSchemaParser
                                             string typeName = MustNeverBeNull(types.GetString());
                                             if (typeName == "enum")
                                             {
-                                                if (field.Type?.TryGetProperty("symbols", out JsonElement symbols) == true)
+                                                foreach (var i in handle(field.Type?.Deserialize<Schema.Type>()!))
                                                 {
-                                                    Types.Current.Value.RegisterType(MustNeverBeNull(field.Name), HighOrderType.ENUM);
-                                                    yield return new AvroEnum(MustNeverBeNull(field.Name), MustNeverBeNull(symbols.EnumerateArray().Select(x => x.GetString()!)).ToArray(), languageFeature);
-                                                    fields.Add(
-                                                        MustNeverBeNull(field.Name),
-                                                        new AvroField(
-                                                            MustNeverBeNull(field.Name),
-                                                            new string[] {
-                                                                MustNeverBeNull(field.Name)
-                                                            },
-                                                            languageFeature
-                                                        )
-                                                    );
+                                                    yield return i;
                                                 }
+                                                fields.Add(
+                                                    MustNeverBeNull(field.Name),
+                                                    new AvroField(
+                                                        MustNeverBeNull(field.Name),
+                                                        new string[] {
+                                                                MustNeverBeNull(field.Name)
+                                                        },
+                                                        languageFeature
+                                                    )
+                                                );
                                             }
                                             else if (typeName == "map" && MustNeverBeNull(field.Type).TryGetProperty("values", out JsonElement values))
                                             {
@@ -204,6 +203,7 @@ public class AvroSchemaParser
                     {
                         if (HasValue(type.Symbols))
                         {
+                            Types.Current.Value.RegisterType(MustNeverBeNull(type.Name), HighOrderType.ENUM);
                             yield return new AvroEnum(MustNeverBeNull(type.Name), MustNeverBeNull(type.Symbols).ToArray(), languageFeature);
                         }
                         break;
@@ -212,6 +212,7 @@ public class AvroSchemaParser
                     {
                         if (HasValue(type.Size))
                         {
+                             Types.Current.Value.RegisterType(MustNeverBeNull(type.Name), HighOrderType.FIXED);
                             yield return new AvroFixed(MustNeverBeNull(type.Name), MustNeverBeNull(type.Size), languageFeature);
                         }
                         break;
@@ -222,7 +223,8 @@ public class AvroSchemaParser
         foreach (var type in MustNeverBeNull(root.Types))
         {
             ThrowIfOtherwise(HasValue(type.Name), HasValue(type.TypeName));
-            foreach(var i in handle(type)) {
+            foreach (var i in handle(type))
+            {
                 yield return i;
             }
 

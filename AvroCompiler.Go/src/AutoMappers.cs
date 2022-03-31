@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.RegularExpressions;
 using AvroCompiler.Core.Contants;
+using AvroCompiler.Core.Storage;
 
 namespace AvroCompiler.Go;
 
@@ -74,13 +75,31 @@ public class AutoMappers
         }
         else
         {
-            return @$"
-            if value, ok := value[""{fieldName}""].({fieldName.ToPascalCase()}); ok {{
-                {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = value
-            }} else {{
-                // fmt.println(""WARNING: Type mismatch for"", ""{fieldName}"")
-            }}
-        ";
+            if (Types.Current.Value.TryGetType(fieldName, out HighOrderType highOrderType))
+            {
+                if (highOrderType == HighOrderType.RECORD)
+                {
+                    return @$"
+                        if value, ok := value[""{fieldName}""].(map[string]any); ok {{
+                            {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = new{fieldName.ToPascalCase()}(value)
+                        }} else {{
+                            // fmt.println(""WARNING: Type mismatch for"", ""{fieldName}"")
+                        }}
+                    ";
+                }
+                else {
+                      return @$"
+                        if value, ok := value[""{fieldName}""].({fieldName.ToPascalCase()}); ok {{
+                            {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = value
+                        }} else {{
+                            // fmt.println(""WARNING: Type mismatch for"", ""{fieldName}"")
+                        }}
+                    ";                  
+                }
+            }
+            else {
+                throw new ArgumentException();
+            }
         }
     }
     public string getBackwardedPimitiveArrayType()

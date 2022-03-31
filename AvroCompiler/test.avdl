@@ -4,7 +4,9 @@ protocol Expedia {
       array<array<array<array<int>>>> test;
       Kind kind;
       Response response;
+      Hash hash;
     }
+    fixed Hash(16);
     enum Kind {
       OK
     }
