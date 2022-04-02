@@ -125,6 +125,7 @@ public class AvroSchemaParser
                 {
                     string[] typeNames = MustNeverBeNull(field.Type).EnumerateArray().Select(x =>
                     {
+                        string tmp = x.GetRawText();
                         if (x.ValueKind == JsonValueKind.String)
                         {
                             return x.GetString()!;
