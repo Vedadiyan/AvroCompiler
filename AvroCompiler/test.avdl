@@ -7,6 +7,7 @@ protocol Expedia {
       Hash hash;
       union {null, Hash} nullableHash;
       union {null, string} fff;
+      map<string> str;
     } 
     fixed Hash(16);
     enum Kind {

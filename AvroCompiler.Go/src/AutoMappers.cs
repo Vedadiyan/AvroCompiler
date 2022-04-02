@@ -67,13 +67,25 @@ public class AutoMappers
     {
         if ((avroType & AvroTypes.REFERENCE) != AvroTypes.REFERENCE)
         {
-            return @$"
-            if value, ok := value[""{fieldName}""].({getType(avroType)}); ok {{
-                {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = value
-            }} else {{
-                // fmt.println(""WARNING: Type mismatch for"", ""{fieldName}"")
-            }}
-        ";
+            if (avroType != AvroTypes.MAP)
+            {
+                return @$"
+                    if value, ok := value[""{fieldName}""].({getType(avroType)}); ok {{
+                        {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = value
+                    }} else {{
+                        // fmt.println(""WARNING: Type mismatch for"", ""{fieldName}"")
+                    }}
+                ";
+            }
+            else {
+                return @$"
+                    if value, ok := value[""{fieldName}""].(map[string]any); ok {{
+                        {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = value
+                    }} else {{
+                        // fmt.println(""WARNING: Type mismatch for"", ""{fieldName}"")
+                    }}
+                "; 
+            }
         }
         else
         {
@@ -112,7 +124,8 @@ public class AutoMappers
                         }}
                     ";
                 }
-                else {
+                else
+                {
                     return @$"
                         if value, ok := value[""{fieldName}""].({selectedType.ToPascalCase()}); ok {{
                             {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = value
