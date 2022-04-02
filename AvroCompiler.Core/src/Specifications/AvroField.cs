@@ -1,5 +1,9 @@
 using AvroCompiler.Core.Abstraction;
 using AvroCompiler.Core.Contants;
+using AvroCompiler.Core.Exceptions;
+using AvroCompiler.Core.Extensions;
+
+using static AvroCompiler.Core.Lexicon;
 
 namespace AvroCompiler.Core.Specifications;
 public class AvroField : AvroElement
@@ -21,18 +25,18 @@ public class AvroField : AvroElement
         }
 
         {
-            bool isNulable = (AvroType & AvroTypes.NULL) == AvroTypes.NULL;
+            bool isNulable = AvroType.IsNullable();
             AvroTypes _type = AvroType;
             if (isNulable)
             {
-                _type ^= AvroTypes.NULL;
+                _type.ExcludeFlag(AvroTypes.NULL);
             }
-            if (isComposit((int)_type))
+            if (_type.IsCompsite())
             {
                 AvroType = AvroTypes.UNION;
                 if (isNulable)
                 {
-                    AvroType |= AvroTypes.NULL;
+                    AvroType.AddFlag(AvroTypes.NULL);
                 }
             }
         }
@@ -42,54 +46,44 @@ public class AvroField : AvroElement
     {
         if ((AvroType & AvroTypes.REFERENCE) == AvroTypes.REFERENCE)
         {
-            if (TypeNames!.Length == 1)
+            string[] typeNames = MustOr(TypeNames, new AvroTypeException(Name));
+            if (typeNames.Length == 1)
             {
-                SelectedType = TypeNames![0];
+                SelectedType = typeNames[0];
                 return LanguageFeature.GetField(SelectedType, AvroType, Name, new { JsonPropertyName = Name });
             }
-            else if (TypeNames!.Length == 2)
+            else if (typeNames.Length == 2)
             {
-                SelectedType = TypeNames.FirstOrDefault(x => x != "null") ?? throw new ArgumentNullException();
+                SelectedType = ShouldOr(typeNames.FirstOrDefault(x => x != "null"), new AvroTypeException(Name));
                 return LanguageFeature.GetField(SelectedType, AvroType, Name, new { JsonPropertyName = Name });
             }
             else
             {
-                throw new ArgumentException();
+                throw new AvroTooManyTypesException(Name);
             }
         }
         else if (AvroType == AvroTypes.MAP)
         {
-            if (Enum.TryParse<AvroTypes>(TypeNames![1].ToUpper(), out AvroTypes type))
+            string[] typeNames = MustOr(TypeNames, new AvroTypeException(Name));
+            if (typeNames.Length == 2)
             {
-                return LanguageFeature.GetMap(type, Name, new { JsonPropertyName = Name });
+                if (Enum.TryParse<AvroTypes>(typeNames[1].ToUpper(), out AvroTypes type))
+                {
+                    return LanguageFeature.GetMap(type, Name, new { JsonPropertyName = Name });
+                }
+                else
+                {
+                    return LanguageFeature.GetMap(typeNames[1], Name, new { JsonPropertyName = Name });
+                }
             }
             else
             {
-                return LanguageFeature.GetMap(TypeNames[1]!, Name, new { JsonPropertyName = Name });
+                throw new AvroMapException(MapExceptionMessages.INAVLID_GENRIC_TYPE, Name);
             }
         }
         else
         {
             return LanguageFeature.GetField(AvroType, Name, new { JsonPropertyName = Name, Types = TypeNames });
         }
-    }
-    private bool isComposit(int n)
-    {
-        double _n = n;
-        int maxTraverse = 32;
-        int currentTraverse = 1;
-        while (currentTraverse++ < maxTraverse)
-        {
-            _n = _n / 2;
-            if (_n % 1 != 0)
-            {
-                return true;
-            }
-            else if (_n == 1)
-            {
-                return false;
-            }
-        }
-        throw new Exception("");
     }
 }

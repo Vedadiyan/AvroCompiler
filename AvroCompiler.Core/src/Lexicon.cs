@@ -98,4 +98,20 @@ public class Lexicon
     {
         throw new ArgumentException();
     }
+    public static T ShouldOr<T>(T? value, Exception exception)
+    {
+        if (value != null)
+        {
+            return value;
+        }
+        throw exception;
+    }
+    public static T[] MustOr<T>(T[]? value, Exception exception)
+    {
+        if (value != null && value.Length > 0)
+        {
+            return value;
+        }
+        throw exception;
+    }
 }

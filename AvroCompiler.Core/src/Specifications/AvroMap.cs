@@ -1,5 +1,7 @@
 using AvroCompiler.Core.Abstraction;
 using AvroCompiler.Core.Contants;
+using AvroCompiler.Core.Exceptions;
+using static AvroCompiler.Core.Lexicon;
 
 namespace AvroCompiler.Core.Specifications;
 public class AvroMap : AvroElement
@@ -25,7 +27,7 @@ public class AvroMap : AvroElement
         }
         else
         {
-            return LanguageFeature.GetMap(TypeNames![0], Name, new { JsonPropertyName = Name });
+            return LanguageFeature.GetMap(MustOr(TypeNames, new AvroTypeException(Name))[0], Name, new { JsonPropertyName = Name });
         }
     }
 }

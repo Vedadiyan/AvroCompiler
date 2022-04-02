@@ -1,6 +1,6 @@
 using AvroCompiler.Core.Abstraction;
 using AvroCompiler.Core.Contants;
-
+using AvroCompiler.Core.Exceptions;
 using static AvroCompiler.Core.Lexicon;
 
 namespace AvroCompiler.Core.Specifications;
@@ -31,7 +31,7 @@ public class AvroArray : AvroElement
         }
         else
         {
-            return LanguageFeature.GetArray(Dimensions, TypeNames![0], Name, new { JsonPropertyName = Name });
+            return LanguageFeature.GetArray(Dimensions, MustOr(TypeNames, new AvroTypeException(Name))[0], Name, new { JsonPropertyName = Name });
         }
     }
 }
