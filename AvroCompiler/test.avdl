@@ -5,7 +5,9 @@ protocol Expedia {
       Kind kind;
       Response response;
       Hash hash;
-    }
+      union {null, Hash} nullableHash;
+      union {null, string} fff;
+    } 
     fixed Hash(16);
     enum Kind {
       OK

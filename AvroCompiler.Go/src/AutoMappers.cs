@@ -14,12 +14,14 @@ public class AutoMappers
     private readonly string? fieldItem;
     private readonly string? fieldGenericParameter;
     private readonly int? dimensions;
+    private readonly string? selectedType;
     private readonly GetType getType;
-    public AutoMappers(AvroTypes avroType, string recordName, string fieldName, GetType getType)
+    public AutoMappers(AvroTypes avroType, string recordName, string fieldName, string selectedType, GetType getType)
     {
         this.avroType = avroType;
         this.recordName = recordName;
         this.fieldName = fieldName;
+        this.selectedType = selectedType;
         this.getType = getType;
     }
     public AutoMappers(string recordName, string fieldName, string fieldItem, string fieldGenericParameter, int dimension, GetType getType)
@@ -63,7 +65,7 @@ public class AutoMappers
     }
     private string getBackwardedPrimitiveNonArrayType()
     {
-        if ((avroType | AvroTypes.REFERENCE) != AvroTypes.REFERENCE)
+        if ((avroType & AvroTypes.REFERENCE) != AvroTypes.REFERENCE)
         {
             return @$"
             if value, ok := value[""{fieldName}""].({getType(avroType)}); ok {{
@@ -87,18 +89,38 @@ public class AutoMappers
                         }}
                     ";
                 }
-                else {
-                      return @$"
+                else
+                {
+                    return @$"
                         if value, ok := value[""{fieldName}""].({fieldName.ToPascalCase()}); ok {{
                             {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = value
                         }} else {{
                             // fmt.println(""WARNING: Type mismatch for"", ""{fieldName}"")
                         }}
-                    ";                  
+                    ";
                 }
             }
-            else {
-                throw new ArgumentException();
+            else
+            {
+                if ((avroType & AvroTypes.NULL) == AvroTypes.NULL)
+                {
+                    return @$"
+                        if value, ok := value[""{fieldName}""].(*{selectedType!.ToPascalCase()}); ok {{
+                            {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = value
+                        }} else {{
+                            // fmt.println(""WARNING: Type mismatch for"", ""{fieldName}"")
+                        }}
+                    ";
+                }
+                else {
+                    return @$"
+                        if value, ok := value[""{fieldName}""].({selectedType.ToPascalCase()}); ok {{
+                            {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = value
+                        }} else {{
+                            // fmt.println(""WARNING: Type mismatch for"", ""{fieldName}"")
+                        }}
+                    ";
+                }
             }
         }
     }

@@ -5,6 +5,7 @@ namespace AvroCompiler.Core.Specifications;
 public class AvroField : AvroElement
 {
     public AvroTypes AvroType { get; }
+    public string? SelectedType { get; private set; }
     public AvroField(string name, string[] typeNames, ILanguageFeature languageFeature) : base(name, typeNames, languageFeature)
     {
         foreach (var typeName in typeNames)
@@ -18,7 +19,7 @@ public class AvroField : AvroElement
                 AvroType |= AvroTypes.REFERENCE;
             }
         }
-        if (AvroType != AvroTypes.REFERENCE && (AvroType & AvroTypes.UNION) != AvroTypes.UNION)
+
         {
             bool isNulable = (AvroType & AvroTypes.NULL) == AvroTypes.NULL;
             AvroTypes _type = AvroType;
@@ -26,7 +27,7 @@ public class AvroField : AvroElement
             {
                 _type ^= AvroTypes.NULL;
             }
-            if ((int)(_type ^ _type) != 0)
+            if (isComposit((int)_type))
             {
                 AvroType = AvroTypes.UNION;
                 if (isNulable)
@@ -41,7 +42,20 @@ public class AvroField : AvroElement
     {
         if ((AvroType & AvroTypes.REFERENCE) == AvroTypes.REFERENCE)
         {
-            return LanguageFeature.GetField(TypeNames![0], AvroType, Name, new { JsonPropertyName = Name });
+            if (TypeNames!.Length == 1)
+            {
+                SelectedType = TypeNames![0];
+                return LanguageFeature.GetField(SelectedType, AvroType, Name, new { JsonPropertyName = Name });
+            }
+            else if (TypeNames!.Length == 2)
+            {
+                SelectedType = TypeNames.FirstOrDefault(x => x != "null") ?? throw new ArgumentNullException();
+                return LanguageFeature.GetField(SelectedType, AvroType, Name, new { JsonPropertyName = Name });
+            }
+            else
+            {
+                throw new ArgumentException();
+            }
         }
         else if (AvroType == AvroTypes.MAP)
         {
@@ -58,5 +72,24 @@ public class AvroField : AvroElement
         {
             return LanguageFeature.GetField(AvroType, Name, new { JsonPropertyName = Name, Types = TypeNames });
         }
+    }
+    private bool isComposit(int n)
+    {
+        double _n = n;
+        int maxTraverse = 32;
+        int currentTraverse = 1;
+        while (currentTraverse++ < maxTraverse)
+        {
+            _n = _n / 2;
+            if (_n % 1 != 0)
+            {
+                return true;
+            }
+            else if (_n == 1)
+            {
+                return false;
+            }
+        }
+        throw new Exception("");
     }
 }
