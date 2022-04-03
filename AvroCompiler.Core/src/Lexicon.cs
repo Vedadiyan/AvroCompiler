@@ -84,6 +84,17 @@ public class Lexicon
         }
         return false;
     }
+    public static bool IsEnum(JsonElement? jsonElement) {
+        if(jsonElement.Value.ValueKind == JsonValueKind.String) {
+            string? typeName = jsonElement.Value.GetString();
+            if(HasValue(typeName)) {
+                if(typeName == "enum") {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
     public static void ThrowIfOtherwise(params bool[] args)
     {
         foreach (var i in args)
@@ -106,9 +117,25 @@ public class Lexicon
         }
         throw exception;
     }
+    public static T ShouldOr<T>(Nullable<T> value, Exception exception) where T: struct
+    {
+        if (value != null)
+        {
+            return value.Value;
+        }
+        throw exception;
+    }
     public static T[] MustOr<T>(T[]? value, Exception exception)
     {
         if (value != null && value.Length > 0)
+        {
+            return value;
+        }
+        throw exception;
+    }
+    public static IEnumerable<T> MustOr<T>(IEnumerable<T>? value, Exception exception)
+    {
+        if (value != null && value.Count() > 0)
         {
             return value;
         }
