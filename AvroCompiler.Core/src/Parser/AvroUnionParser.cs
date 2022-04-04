@@ -96,7 +96,8 @@ public class AvroUnionParser : IAvroParser<IEnumerable<AvroElement>>
                                         {
                                             types.Add("ARRAY");
                                         }
-                                        else {
+                                        else
+                                        {
                                             throw new Exception("");
                                         }
                                     }
@@ -114,11 +115,11 @@ public class AvroUnionParser : IAvroParser<IEnumerable<AvroElement>>
                 {
                     if (types.Contains("MAP"))
                     {
-                        yield return new AvroMap(name, itemGenericType, languageFeature);
+                        yield return new AvroMap(name, ShouldOr(itemGenericType, new ArgumentNullException()), languageFeature);
                     }
                     else if (types.Contains("ARRAY"))
                     {
-                        yield return new AvroArray(name, dimensions, itemType, itemGenericType, languageFeature);
+                        yield return new AvroArray(name, dimensions, ShouldOr(itemType, new ArgumentNullException()), itemGenericType, languageFeature);
                     }
                     else
                     {
