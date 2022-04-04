@@ -23,11 +23,11 @@ public static class AvroTypesExtensions
         }
         throw new Exception("Maximum traverse limit reached");
     }
-    public static void ExcludeFlag(this AvroTypes avroTypes, AvroTypes flag) {
-        avroTypes = avroTypes ^ flag;
+    public static AvroTypes ExcludeFlag(this AvroTypes avroTypes, AvroTypes flag) {
+        return avroTypes ^ flag;
     }
-    public static void AddFlag(this AvroTypes avroTypes, AvroTypes flag) {
-        avroTypes |= flag;
+    public static AvroTypes AddFlag(this AvroTypes avroTypes, AvroTypes flag) {
+        return avroTypes | flag;
     }
     public static bool IsNullable(this AvroTypes avroTypes) {
         return (avroTypes & AvroTypes.NULL) == AvroTypes.NULL;

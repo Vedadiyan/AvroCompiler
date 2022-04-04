@@ -23,21 +23,18 @@ public class AvroField : AvroElement
                 AvroType |= AvroTypes.REFERENCE;
             }
         }
-
+        bool isNulable = AvroType.IsNullable();
+        AvroTypes _type = AvroType;
+        if (isNulable)
         {
-            bool isNulable = AvroType.IsNullable();
-            AvroTypes _type = AvroType;
+            _type = _type.ExcludeFlag(AvroTypes.NULL);
+        }
+        if (_type.IsCompsite())
+        {
+            AvroType = AvroTypes.UNION;
             if (isNulable)
             {
-                _type.ExcludeFlag(AvroTypes.NULL);
-            }
-            if (_type.IsCompsite())
-            {
-                AvroType = AvroTypes.UNION;
-                if (isNulable)
-                {
-                    AvroType.AddFlag(AvroTypes.NULL);
-                }
+                AvroType = AvroType.AddFlag(AvroTypes.NULL);
             }
         }
     }
