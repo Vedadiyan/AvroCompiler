@@ -288,15 +288,15 @@ import (
                 stringBuilder.AppendLine($"    {i.Template()}");
                 if (i is AvroField avroField)
                 {
-                    constructor.AppendLine(new AutoMappers(avroField.AvroType, name, avroField.Name, avroField.SelectedType, GetType).GetBackwardMapper());
+                    constructor.AppendLine(new AutoMappers(avroField.AvroType, name, avroField.Name, avroField.SelectedType!, GetType).GetBackwardMapper());
                 }
                 else if (i is AvroArray avroArray)
                 {
-                    constructor.AppendLine(new AutoMappers(name, avroArray.Name, avroArray.TypeNames![0], avroArray.ElementGenericType, avroArray.Dimensions, GetType).GetBackwardMapper());
+                    constructor.AppendLine(new AutoMappers(name, avroArray.Name, avroArray.TypeNames![0], avroArray.ElementGenericType!, avroArray.Dimensions, GetType).GetBackwardMapper());
                 }
                 else if (i is AvroMap avroMap)
                 {
-                    constructor.AppendLine(new AutoMappers(AvroTypes.MAP, name, avroMap.Name, null, GetType).GetBackwardMapper());
+                    constructor.AppendLine(new AutoMappers(AvroTypes.MAP, name, avroMap.Name, null!, GetType).GetBackwardMapper());
                 }
             }
             stringBuilder.AppendLine("}");
