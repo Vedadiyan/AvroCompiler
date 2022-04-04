@@ -34,6 +34,7 @@ public class AvroAvprParser : IAvroParser<IEnumerable<AvroElement>>
         if (HasValue(root))
         {
             ThrowIfOtherwise(HasValue(root.Types));
+            languageFeature.RegisterProtocol(root.Protocol!);
             foreach (var type in MustNeverBeNull(root.Types))
             {
                 ThrowIfOtherwise(HasValue(type.Name), HasValue(type.TypeName));

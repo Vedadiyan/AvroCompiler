@@ -1,7 +1,7 @@
 @register("")
 protocol Expedia {
     enum Kind2 {
-      OK
+      OK2
     }
     record Request {
       array<array<array<array<int>>>> test;

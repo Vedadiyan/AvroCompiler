@@ -26,6 +26,9 @@ public class AvroCompilerContext
             AvroAvprParser avroAvprParser = new AvroAvprParser(stream, languageFeature);
             IReadOnlyList<AvroElement> avroElements = avroAvprParser.Parse().ToList();
             StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.AppendLine(languageFeature.GetComments());
+            stringBuilder.AppendLine(languageFeature.GetNamespace());
+            stringBuilder.AppendLine(languageFeature.GetImports());
             foreach(var avroElement in avroElements) {
                 stringBuilder.AppendLine(avroElement.Template());
             }
