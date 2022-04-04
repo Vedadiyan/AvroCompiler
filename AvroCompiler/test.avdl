@@ -23,5 +23,5 @@ protocol Expedia {
     record Response {
       string results;
     }
-    //Response GetResults(Request request);
+    Response GetResults(Request request);
 }

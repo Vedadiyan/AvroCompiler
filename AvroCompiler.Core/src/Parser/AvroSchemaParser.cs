@@ -8,7 +8,7 @@ using AvroCompiler.Core.Storage;
 using static AvroCompiler.Core.Lexicon;
 
 namespace AvroCompiler.Core.Parser;
-[Obsolete]
+[Obsolete("AvroSchemaParser will be removed in the next release", true)]
 public class AvroSchemaParser
 {
     private readonly ILanguageFeature languageFeature;
