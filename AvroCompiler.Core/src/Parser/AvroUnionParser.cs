@@ -53,48 +53,21 @@ public class AvroUnionParser : IAvroParser<IEnumerable<AvroElement>>
                     {
                         if (t.TryGetProperty("type", out JsonElement innerType))
                         {
-                            if (types.Count > 1 || (types.Count == 1 && types[0] != "null"))
+                            if (IsMap(innerType))
                             {
-                                types = MakeUnion(types);
-                                break;
-                            }
-                            else
-                            {
-                                if (IsMap(innerType))
+                                if (isUnion(types))
                                 {
-                                    if (isUnion(types))
-                                    {
-                                        types = MakeUnion(types);
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        types.Add("MAP");
-                                        if (t.TryGetProperty("values", out JsonElement value))
-                                        {
-                                            if (value.ValueKind == JsonValueKind.String)
-                                            {
-                                                itemGenericType = value.GetString();
-                                            }
-                                            else
-                                            {
-                                                throw new Exception("");
-                                            }
-                                        }
-                                    }
+                                    types = MakeUnion(types);
+                                    break;
                                 }
-                                else if (IsArray(innerType))
+                                else
                                 {
-                                    if (isUnion(types))
+                                    types.Add("MAP");
+                                    if (t.TryGetProperty("values", out JsonElement value))
                                     {
-                                        types = MakeUnion(types);
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        if (IsArrayType(t, ref dimensions, ref itemType, ref itemGenericType))
+                                        if (value.ValueKind == JsonValueKind.String)
                                         {
-                                            types.Add("ARRAY");
+                                            itemGenericType = value.GetString();
                                         }
                                         else
                                         {
@@ -102,7 +75,33 @@ public class AvroUnionParser : IAvroParser<IEnumerable<AvroElement>>
                                         }
                                     }
                                 }
-
+                            }
+                            else if (IsArray(innerType))
+                            {
+                                if (isUnion(types))
+                                {
+                                    types = MakeUnion(types);
+                                    break;
+                                }
+                                else
+                                {
+                                    if (IsArrayType(t, ref dimensions, ref itemType, ref itemGenericType))
+                                    {
+                                        types.Add("ARRAY");
+                                    }
+                                    else
+                                    {
+                                        throw new Exception("");
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                if (isUnion(types))
+                                {
+                                    types = MakeUnion(types);
+                                    break;
+                                }
                             }
                         }
                         else
