@@ -1,8 +1,12 @@
 @register("")
 protocol Expedia {
+    enum Kind2 {
+      OK
+    }
     record Request {
       array<array<array<array<int>>>> test;
       Kind kind;
+      Kind2 kind2;
       Response response;
       Hash hash;
       union {null, Hash} nullableHash;

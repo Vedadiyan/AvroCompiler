@@ -28,7 +28,7 @@ public class AvroRecordParser : IAvroParser<IEnumerable<AvroElement>>
     {
         if (type.Fields != null)
         {
-            IEnumerable<Field> fields = Lexicon.MustOr(type.Fields, new ArgumentException());
+            IEnumerable<Field> fields = Lexicon.MustOr(type.Fields, new ArgumentNullException());
             Dictionary<string, AvroElement> avroElements = new Dictionary<string, AvroElement>();
             foreach (var nullableField in fields)
             {
@@ -54,7 +54,7 @@ public class AvroRecordParser : IAvroParser<IEnumerable<AvroElement>>
                 if (len == avroElements.Count)
                 {
                     Schema.Type? innerTypes = ShouldOr(field.Type, new ArgumentNullException()).Deserialize<Schema.Type>();
-                    AvroRecordParser innerParser = new AvroRecordParser(ShouldOr(innerTypes, new ArgumentException()), languageFeature);
+                    AvroRecordParser innerParser = new AvroRecordParser(ShouldOr(innerTypes, new ArgumentNullException()), languageFeature);
                     foreach (var item in innerParser.Parse())
                     {
                         yield return item;
@@ -63,18 +63,18 @@ public class AvroRecordParser : IAvroParser<IEnumerable<AvroElement>>
                 }
 
             }
-            yield return new AvroRecord(ShouldOr(type.Name, new ArgumentException()), avroElements, type.RawObject.ValueKind != JsonValueKind.Undefined ? type.RawObject.GetRawText() : "", languageFeature);
+            yield return new AvroRecord(ShouldOr(type.Name, new ArgumentNullException()), avroElements, type.RawObject.ValueKind != JsonValueKind.Undefined ? type.RawObject.GetRawText() : "", languageFeature);
         }
         else
         {
             if (type.TypeName == "enum")
             {
-                string name = ShouldOr(type.Name, new ArgumentException());
-                yield return new AvroEnum(name, type.Symbols.ToArray(), languageFeature);
+                string name = ShouldOr(type.Name, new ArgumentNullException());
+                yield return new AvroEnum(name, ShouldOr(type.Symbols, new ArgumentNullException()).ToArray(), languageFeature);
             }
             else if (type.TypeName == "fixed")
             {
-                yield return new AvroFixed(ShouldOr(type.Name, new ArgumentException()), ShouldOr(type.Size, new ArgumentException()), languageFeature);
+                yield return new AvroFixed(ShouldOr(type.Name, new ArgumentNullException()), ShouldOr(type.Size, new ArgumentNullException()), languageFeature);
             }
             else
             {
