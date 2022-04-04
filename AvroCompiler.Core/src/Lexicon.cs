@@ -50,7 +50,7 @@ public class Lexicon
     }
     public static bool IsArrayType(JsonElement? jsonElement, ref int dimenstions, ref string? arrayItemType, ref string? itemGenericType)
     {
-        if (jsonElement.Value.ValueKind == JsonValueKind.Object)
+        if (jsonElement?.ValueKind == JsonValueKind.Object)
         {
             if (jsonElement?.TryGetProperty("items", out JsonElement item) == true)
             {
