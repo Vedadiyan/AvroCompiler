@@ -37,13 +37,20 @@ public class AutoMappers
     }
     public string GetForwardMapper()
     {
-        if ((avroType & AvroTypes.REFERENCE) != AvroTypes.REFERENCE)
+        if (Types.Current.Value.TryGetType(fieldName!, out HighOrderType highOrderType))
         {
-            return getForwardedPrimitiveType();
+            if (highOrderType == HighOrderType.RECORD)
+            {
+                return getForwardedReferenceType();
+            }
+            else
+            {
+                return getForwardedPrimitiveType();
+            }
         }
         else
         {
-            return getForwardedReferenceType();
+            return getForwardedPrimitiveType();
         }
     }
     public string GetBackwardMapper()

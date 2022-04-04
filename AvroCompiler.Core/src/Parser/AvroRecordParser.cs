@@ -2,6 +2,7 @@ using System.Text.Json;
 using AvroCompiler.Core.Abstraction;
 using AvroCompiler.Core.Schema;
 using AvroCompiler.Core.Specifications;
+using AvroCompiler.Core.Storage;
 using static AvroCompiler.Core.Lexicon;
 
 namespace AvroCompiler.Core.Parser;
@@ -71,6 +72,7 @@ public class AvroRecordParser : IAvroParser<IEnumerable<AvroElement>>
             if(type.RawObject.ValueKind != JsonValueKind.Undefined) {
                 languageFeature.RegisterCodec(ShouldOr(type.Name, new ArgumentNullException()), type.RawObject.GetRawText(), null);
             }
+            Types.Current.Value.RegisterType(ShouldOr(type.Name, new ArgumentNullException()), HighOrderType.RECORD);
             yield return new AvroRecord(ShouldOr(type.Name, new ArgumentNullException()), avroElements, type.RawObject.ValueKind != JsonValueKind.Undefined ? type.RawObject.GetRawText() : "", languageFeature);
         }
         else
@@ -78,10 +80,12 @@ public class AvroRecordParser : IAvroParser<IEnumerable<AvroElement>>
             if (type.TypeName == "enum")
             {
                 string name = ShouldOr(type.Name, new ArgumentNullException());
+                Types.Current.Value.RegisterType(name, HighOrderType.ENUM);
                 yield return new AvroEnum(name, ShouldOr(type.Symbols, new ArgumentNullException()).ToArray(), languageFeature);
             }
             else if (type.TypeName == "fixed")
             {
+                Types.Current.Value.RegisterType(ShouldOr(type.Name, new ArgumentNullException()), HighOrderType.FIXED);
                 yield return new AvroFixed(ShouldOr(type.Name, new ArgumentNullException()), ShouldOr(type.Size, new ArgumentNullException()), languageFeature);
             }
             else

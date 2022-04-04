@@ -4,6 +4,7 @@ using AvroCompiler.Core.Schema;
 using AvroCompiler.Core.Specifications;
 using static AvroCompiler.Core.Lexicon;
 using static AvroCompiler.Core.Exceptions.AvroCompliationErrorLexicon;
+using AvroCompiler.Core.Storage;
 
 namespace AvroCompiler.Core.Parser;
 
@@ -46,6 +47,7 @@ public class AvroEnumParser : IAvroParser<IEnumerable<AvroElement>>
             string name = ShouldOr(type.Name, new ArgumentNullException(MissingFieldName()));
             if (HasValue(type.Symbols))
             {
+                Types.Current.Value.RegisterType(name, HighOrderType.ENUM);
                 yield return new AvroEnum(name, MustNeverBeNull(type.Symbols).ToArray(), languageFeature);
             }
         }

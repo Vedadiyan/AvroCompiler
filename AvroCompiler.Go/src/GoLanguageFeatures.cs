@@ -275,6 +275,7 @@ public class GoLanguageFeatures : ILanguageFeature
         {
             StringBuilder stringBuilder = new StringBuilder();
             StringBuilder constructor = new StringBuilder();
+            StringBuilder toMap = new StringBuilder();
             string namePascalCase = name.ToPascalCase();
             string nameCamelCase = name.ToCamelCase();
             stringBuilder.AppendLine($"type {namePascalCase} struct {{");
@@ -283,24 +284,33 @@ public class GoLanguageFeatures : ILanguageFeature
                 $next
                 return {nameCamelCase}
             }}";
+            string toMapFunction = @$"func ({nameCamelCase} {namePascalCase}) ToMap() map[string]any {{
+                _map := make(map[string]any)
+                $next
+                return _map
+            }}";
             foreach (var i in fields)
             {
                 stringBuilder.AppendLine($"    {i.Template()}");
                 if (i is AvroField avroField)
                 {
                     constructor.AppendLine(new AutoMappers(avroField.AvroType, name, avroField.Name, avroField.SelectedType!, GetType).GetBackwardMapper());
+                    toMap.AppendLine(new AutoMappers(avroField.AvroType, name, avroField.Name, avroField.SelectedType!, GetType).GetForwardMapper());
                 }
                 else if (i is AvroArray avroArray)
                 {
                     constructor.AppendLine(new AutoMappers(name, avroArray.Name, avroArray.TypeNames![0], avroArray.ElementGenericType!, avroArray.Dimensions, GetType).GetBackwardMapper());
+                    toMap.AppendLine(new AutoMappers(name, avroArray.Name, avroArray.TypeNames![0], avroArray.ElementGenericType!, avroArray.Dimensions, GetType).GetForwardMapper());
                 }
                 else if (i is AvroMap avroMap)
                 {
                     constructor.AppendLine(new AutoMappers(AvroTypes.MAP, name, avroMap.Name, null!, GetType).GetBackwardMapper());
+                    toMap.AppendLine(new AutoMappers(AvroTypes.MAP, name, avroMap.Name, null!, GetType).GetForwardMapper());
                 }
             }
             stringBuilder.AppendLine("}");
             stringBuilder.AppendLine(constructorFunction.Replace("$next", constructor.ToString()));
+            stringBuilder.AppendLine(toMapFunction.Replace("$next", toMap.ToString()));
             return stringBuilder.ToString();
         }
         return string.Empty;

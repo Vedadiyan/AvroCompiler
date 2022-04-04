@@ -4,6 +4,8 @@ using AvroCompiler.Core.Schema;
 using AvroCompiler.Core.Specifications;
 using static AvroCompiler.Core.Lexicon;
 using static AvroCompiler.Core.Exceptions.AvroCompliationErrorLexicon;
+using AvroCompiler.Core.Storage;
+
 namespace AvroCompiler.Core.Parser;
 
 public class AvroFixedParser : IAvroParser<IEnumerable<AvroElement>>
@@ -21,6 +23,7 @@ public class AvroFixedParser : IAvroParser<IEnumerable<AvroElement>>
         {
             string name = ShouldOr(type.Name, new ArgumentNullException(MissingFieldName()));
             int size = ShouldOr(type.Size, new ArgumentNullException());
+            Types.Current.Value.RegisterType(name, HighOrderType.FIXED);
             yield return new AvroFixed(name, size, languageFeature);
         }
     }
