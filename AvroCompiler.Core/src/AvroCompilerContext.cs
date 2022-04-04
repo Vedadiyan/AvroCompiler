@@ -25,14 +25,20 @@ public class AvroCompilerContext
             Stream stream = await AvroToolsApi.Idl(tempFileName);
             AvroAvprParser avroAvprParser = new AvroAvprParser(stream, languageFeature);
             IReadOnlyList<AvroElement> avroElements = avroAvprParser.Parse().ToList();
-            StringBuilder finalCode = new StringBuilder();
-            finalCode.AppendLine(languageFeature.GetComments());
-            finalCode.AppendLine(languageFeature.GetNamespace());
-            finalCode.AppendLine(languageFeature.GetImports());
+            StringBuilder preview = new StringBuilder();
+            preview.AppendLine(languageFeature.GetComments());
+            preview.AppendLine(languageFeature.GetNamespace());
+            preview.AppendLine(languageFeature.GetImports());
             foreach(var avroElement in avroElements) {
-                finalCode.AppendLine(avroElement.Template());
+                preview.AppendLine(avroElement.Template());
             }
-            finalCode.AppendLine(languageFeature.GetCodec());
+            preview.AppendLine(languageFeature.GetCodec());
+            StringBuilder finalCode = new StringBuilder();
+            foreach(var line in preview.ToString().Split("\r\n")) {
+                if(!string.IsNullOrWhiteSpace(line)) {
+                    finalCode.AppendLine(line);
+                }
+            }
             string code = await languageFeature.Format(finalCode.ToString());
             File.WriteAllText(outputPath, code);
         }
