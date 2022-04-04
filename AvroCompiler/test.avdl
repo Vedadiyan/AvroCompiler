@@ -15,6 +15,9 @@ protocol Expedia {
       union {map<string>, Kind} str2;
       union {map<string>, Kind, null} str3;
       union {null, map<string>} str4;
+      union {null, array<int>} str5;
+      array<map<string>> str6;
+      union {null, array<map<string>>} str7;
     } 
     fixed Hash(16);
     enum Kind {

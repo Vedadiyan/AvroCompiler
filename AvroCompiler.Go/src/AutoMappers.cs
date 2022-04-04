@@ -35,6 +35,7 @@ public class AutoMappers
     }
     public string GetForwardMapper()
     {
+        return "";
         if ((avroType & AvroTypes.REFERENCE) != AvroTypes.REFERENCE)
         {
             return getForwardedPrimitiveType();
@@ -46,6 +47,7 @@ public class AutoMappers
     }
     public string GetBackwardMapper()
     {
+        return "";
         if (avroType != AvroTypes.UNDEFINED)
         {
             return getBackwardedPrimitiveNonArrayType();
@@ -65,6 +67,7 @@ public class AutoMappers
     }
     private string getBackwardedPrimitiveNonArrayType()
     {
+        return "";
         if ((avroType & AvroTypes.REFERENCE) != AvroTypes.REFERENCE)
         {
             if (avroType != AvroTypes.MAP)
@@ -139,6 +142,7 @@ public class AutoMappers
     }
     public string getBackwardedPimitiveArrayType()
     {
+        return "";
         string type = "";
         bool isPrimitiveType;
         if (Enum.TryParse<AvroTypes>(fieldItem.ToUpper(), out AvroTypes avroType))

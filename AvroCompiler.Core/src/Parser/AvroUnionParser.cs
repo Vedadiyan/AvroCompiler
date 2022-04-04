@@ -31,13 +31,126 @@ public class AvroUnionParser : IAvroParser<IEnumerable<AvroElement>>
         {
             if (IsUnionType(type))
             {
-                IEnumerable<string> types = from t in type.EnumerateArray()
-                                            select
-                                               t.ValueKind == JsonValueKind.String ?
-                                                   t.GetString() :
-                                                   "UNION";
-                yield return new AvroField(name, types.ToArray(), languageFeature);
+                int dimensions = 1;
+                string? itemType = null;
+                string? itemGenericType = null;
+                List<string> types = new List<string>();
+                foreach (var t in type.EnumerateArray())
+                {
+                    if (t.ValueKind == JsonValueKind.String)
+                    {
+                        if (isUnion(types))
+                        {
+                            types = MakeUnion(types);
+                            break;
+                        }
+                        else
+                        {
+                            types.Add(ShouldOr(t.GetString(), new ArgumentNullException()));
+                        }
+                    }
+                    else if (t.ValueKind == JsonValueKind.Object)
+                    {
+                        if (t.TryGetProperty("type", out JsonElement innerType))
+                        {
+                            if (types.Count > 1 || (types.Count == 1 && types[0] != "null"))
+                            {
+                                types = MakeUnion(types);
+                                break;
+                            }
+                            else
+                            {
+                                if (IsMap(innerType))
+                                {
+                                    if (isUnion(types))
+                                    {
+                                        types = MakeUnion(types);
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        types.Add("MAP");
+                                        if (t.TryGetProperty("values", out JsonElement value))
+                                        {
+                                            if (value.ValueKind == JsonValueKind.String)
+                                            {
+                                                itemGenericType = value.GetString();
+                                            }
+                                            else
+                                            {
+                                                throw new Exception("");
+                                            }
+                                        }
+                                    }
+                                }
+                                else if (IsArray(innerType))
+                                {
+                                    if (isUnion(types))
+                                    {
+                                        types = MakeUnion(types);
+                                        break;
+                                    }
+                                    else
+                                    {
+                                        if (IsArrayType(t, ref dimensions, ref itemType, ref itemGenericType))
+                                        {
+                                            types.Add("ARRAY");
+                                        }
+                                        else {
+                                            throw new Exception("");
+                                        }
+                                    }
+                                }
+
+                            }
+                        }
+                        else
+                        {
+                            throw new Exception("");
+                        }
+                    }
+                }
+                if (!types.Contains("UNION"))
+                {
+                    if (types.Contains("MAP"))
+                    {
+                        yield return new AvroMap(name, itemGenericType, languageFeature);
+                    }
+                    else if (types.Contains("ARRAY"))
+                    {
+                        yield return new AvroArray(name, dimensions, itemType, itemGenericType, languageFeature);
+                    }
+                    else
+                    {
+                        yield return new AvroField(name, types.ToArray(), languageFeature);
+                    }
+                }
+                else
+                {
+                    yield return new AvroField(name, types.ToArray(), languageFeature);
+                }
             }
         }
+    }
+    private bool isUnion(List<string> types)
+    {
+        int uniqueTypes = 0;
+        foreach (var i in types)
+        {
+            if (i != "null")
+            {
+                uniqueTypes++;
+            }
+        }
+        return uniqueTypes >= 1;
+    }
+    private List<string> MakeUnion(List<string> types)
+    {
+        List<string> _types = new List<string>() { "UNION" };
+        if (types.Contains("null"))
+        {
+            _types.Add("NULL");
+        }
+        return _types;
     }
 }

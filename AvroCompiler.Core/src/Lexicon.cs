@@ -87,6 +87,17 @@ public class Lexicon
         }
         return false;
     }
+       public static bool IsArray(JsonElement? jsonElement)
+    {
+        if (jsonElement?.ValueKind == JsonValueKind.String)
+        {
+            if (jsonElement?.GetString() == "array")
+            {
+                return true;
+            }
+        }
+        return false;
+    }
     public static bool IsEnum(JsonElement jsonElement)
     {
         if (jsonElement.ValueKind == JsonValueKind.String)
