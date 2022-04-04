@@ -138,7 +138,7 @@ public class AutoMappers
                 else
                 {
                     return @$"
-                        if value, ok := value[""{fieldName}""].({selectedType.ToPascalCase()}); ok {{
+                        if value, ok := value[""{fieldName}""].({selectedType?.ToPascalCase()}); ok {{
                             {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = value
                         }} else {{
                             // fmt.println(""WARNING: Type mismatch for"", ""{fieldName}"")
@@ -212,16 +212,14 @@ public class AutoMappers
             if (type != "map")
             {
                 string tmp = @$"
-                if value, ok := value[""{fieldName}""].([]any); ok {{
-
+                    if value, ok := value[""{fieldName}""].([]any); ok {{
                         tmp{0} := make({getArrayDimensions(0)}{type}, len(value))
                         for index, value := range value {{
                             if value, ok := value.({type}); ok {{
                                 {getAssignment(0)}
                             }}
                         }}
-               {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = tmp{0}
-                  
+                        {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = tmp{0}
                     }}
                 ";
                 output = output.Replace("$next", tmp);
@@ -229,16 +227,14 @@ public class AutoMappers
             else
             {
                 string tmp = @$"
-                if value, ok := value[""{fieldName}""].([]any); ok {{
-             
+                    if value, ok := value[""{fieldName}""].([]any); ok {{
                         tmp{0} := make({getArrayDimensions(0)}map[{fieldGenericParameter}]any, len(value))
                         for index, value := range value {{
                             if value, ok := value.(map[{fieldGenericParameter}]any); ok {{
                                 {getAssignment(0)}
                             }}
                         }}
-                    {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = tmp{0}
-               
+                        {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = tmp{0}
                     }}
                 ";
                 output = output.Replace("$next", tmp);
@@ -253,27 +249,27 @@ public class AutoMappers
                     if (type != "map")
                     {
                         string tmp = @$"
-                    if value, ok := value[""{fieldName}""].([]any); ok {{
-                        tmp{i} := make({getArrayDimensions(i)}{type}, len(value))
-                        for index, value := range value {{
-                            $next    
-                        }}
-                        {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = tmp{i}
-                    }}
-                ";
+                            if value, ok := value[""{fieldName}""].([]any); ok {{
+                                tmp{i} := make({getArrayDimensions(i)}{type}, len(value))
+                                for index, value := range value {{
+                                    $next    
+                                }}
+                                {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = tmp{i}
+                            }}
+                        ";
                         output = output.Replace("$next", tmp);
                     }
                     else
                     {
                         string tmp = @$"
-                    if value, ok := value[""{fieldName}""].([]any); ok {{
-                        tmp{i} := make({getArrayDimensions(i)}map[{fieldGenericParameter}]any, len(value))
-                        for index, value := range value {{
-                            $next    
-                        }}
-                        {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = tmp{i}
-                    }}
-                ";
+                            if value, ok := value[""{fieldName}""].([]any); ok {{
+                                tmp{i} := make({getArrayDimensions(i)}map[{fieldGenericParameter}]any, len(value))
+                                for index, value := range value {{
+                                    $next    
+                                }}
+                                {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = tmp{i}
+                            }}
+                        ";
                         output = output.Replace("$next", tmp);
                     }
 
@@ -283,27 +279,27 @@ public class AutoMappers
                     if (type != "map")
                     {
                         string tmp = @$"
-                    if value, ok := value.([]any); ok {{
-                        tmp{i} := make({getArrayDimensions(i)}{type}, len(value))
-                        for index, value := range value {{
-                            $next    
-                        }}
-                        {getAssignment(i - 1)}
-                    }}
-                ";
+                            if value, ok := value.([]any); ok {{
+                                tmp{i} := make({getArrayDimensions(i)}{type}, len(value))
+                                for index, value := range value {{
+                                    $next    
+                                }}
+                                {getAssignment(i - 1)}
+                            }}
+                        ";
                         output = output.Replace("$next", tmp);
                     }
                     else
                     {
                         string tmp = @$"
-                    if value, ok := value.([]any); ok {{
-                        tmp{i} := make({getArrayDimensions(i)}map[{fieldGenericParameter}]any, len(value))
-                        for index, value := range value {{
-                            $next    
-                        }}
-                        {getAssignment(i - 1)}
-                    }}
-                ";
+                            if value, ok := value.([]any); ok {{
+                                tmp{i} := make({getArrayDimensions(i)}map[{fieldGenericParameter}]any, len(value))
+                                for index, value := range value {{
+                                    $next    
+                                }}
+                                {getAssignment(i - 1)}
+                            }}
+                        ";
                         output = output.Replace("$next", tmp);
                     }
                 }
@@ -312,31 +308,31 @@ public class AutoMappers
                     if (type != "map")
                     {
                         string tmp = @$"
-                    if value, ok := value.([]any); ok {{
-                        tmp{i} := make({getArrayDimensions(i)}{type}, len(value))
-                        for index, value := range value {{
-                            if value, ok := value.({type}); ok {{
-                                {getAssignment(i)}
+                            if value, ok := value.([]any); ok {{
+                                tmp{i} := make({getArrayDimensions(i)}{type}, len(value))
+                                for index, value := range value {{
+                                    if value, ok := value.({type}); ok {{
+                                        {getAssignment(i)}
+                                    }}
+                                }}
+                                {getAssignment(i - 1)}
                             }}
-                        }}
-                        {getAssignment(i - 1)}
-                    }}
-                ";
+                        ";
                         output = output.Replace("$next", tmp);
                     }
                     else
                     {
                         string tmp = @$"
-                    if value, ok := value.([]any); ok {{
-                        tmp{i} := make({getArrayDimensions(i)}map[{fieldGenericParameter}]any, len(value))
-                        for index, value := range value {{
-                            if value, ok := value.({type}); ok {{
-                                {getAssignment(i)}
+                            if value, ok := value.([]any); ok {{
+                                tmp{i} := make({getArrayDimensions(i)}map[{fieldGenericParameter}]any, len(value))
+                                for index, value := range value {{
+                                    if value, ok := value.({type}); ok {{
+                                        {getAssignment(i)}
+                                    }}
+                                }}
+                                {getAssignment(i - 1)}
                             }}
-                        }}
-                        {getAssignment(i - 1)}
-                    }}
-                ";
+                        ";
                         output = output.Replace("$next", tmp);
                     }
                 }
