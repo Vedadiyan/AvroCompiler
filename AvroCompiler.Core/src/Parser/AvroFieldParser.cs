@@ -3,37 +3,47 @@ using AvroCompiler.Core.Abstraction;
 using AvroCompiler.Core.Schema;
 using AvroCompiler.Core.Specifications;
 using static AvroCompiler.Core.Lexicon;
+using static AvroCompiler.Core.Exceptions.AvroCompliationErrorLexicon;
 
 namespace AvroCompiler.Core.Parser;
 
-public class AvroFieldParser : IAvroParser<AvroElement?>
+public class AvroFieldParser : IAvroParser<IEnumerable<AvroElement>>
 {
     private readonly Field field;
     private readonly ILanguageFeature languageFeature;
-    private readonly HashSet<Func<Field, IAvroParser<AvroElement?>>> handlers;
+    private readonly HashSet<Func<Field, IAvroParser<IEnumerable<AvroElement>>>> handlers;
     public AvroFieldParser(Field field, ILanguageFeature languageFeature)
     {
         this.field = field;
         this.languageFeature = languageFeature;
-        handlers = new HashSet<Func<Field, IAvroParser<AvroElement?>>> {
-            x => new AvroUnionParser(x, languageFeature)
+        handlers = new HashSet<Func<Field, IAvroParser<IEnumerable<AvroElement>>>> {
+            x => new AvroUnionParser(x, languageFeature),
+            x => new AvroArrayParser(x, languageFeature),
+            x => new AvroUnionParser(x, languageFeature),
+            x => new AvroEnumParser(x, languageFeature)
         };
     }
-    public AvroElement? Parse()
+    public IEnumerable<AvroElement> Parse()
     {
-        foreach(var handler in handlers) {
-            AvroElement? avroElement = handler(field).Parse();
-            if(avroElement != null) {
-                return avroElement;
+        bool yielded = false;
+        foreach (var handler in handlers)
+        {
+            IEnumerable<AvroElement> avroElements = handler(field).Parse();
+            foreach (var avroElement in avroElements)
+            {
+                yield return avroElement;
+                yielded = true;
             }
         }
-        JsonElement type = ShouldOr(field.Type, new ArgumentNullException());
-        string name = ShouldOr(field.Name, new ArgumentNullException());
-        string typeName = ShouldOr(type.GetString(), new ArgumentException());
-        if (IsFieldType(type))
+        if (!yielded)
         {
-            return new AvroField(name, new string[] { typeName }, languageFeature);
+            JsonElement type = ShouldOr(field.Type, new ArgumentNullException(MissingFieldType()));
+            string name = ShouldOr(field.Name, new ArgumentNullException(MissingFieldName()));
+            //string typeName = ShouldOr(type.GetString(), new ArgumentException($"Missing type name for field `{name}`"));
+            if (IsFieldType(type))
+            {
+                yield return new AvroField(name, new string[] { name }, languageFeature);
+            }
         }
-        return null;
     }
 }

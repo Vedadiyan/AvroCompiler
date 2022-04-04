@@ -31,7 +31,7 @@ public class AvroSchemaParser
             preview.Append(languageFeature.GetComments());
             preview.AppendLine(languageFeature.GetNamespace(root.Protocol!));
             preview.AppendLine(languageFeature.GetImports());
-            foreach (var item in parse(root))
+            foreach (var item in parse(root).ToList())
             {
                 if (item is AvroRecord avroRecord)
                 {
@@ -56,7 +56,7 @@ public class AvroSchemaParser
         foreach (var type in MustNeverBeNull(root.Types))
         {
             ThrowIfOtherwise(HasValue(type.Name), HasValue(type.TypeName));
-            foreach (var item in handle(type))
+            foreach (var item in handle2(type))
             {
                 yield return item;
             }
@@ -78,6 +78,41 @@ public class AvroSchemaParser
             }
         }
     }
+    private IEnumerable<AvroElement> handle2(Schema.Type type)
+    {
+        switch (type.TypeName)
+        {
+            case "record":
+            case "error":
+            case "object":
+                {
+                    foreach (var item in new AvroRecordParser(type, languageFeature).Parse())
+                    {
+                        yield return item;
+                    }
+                    break;
+                }
+            case "enum":
+                {
+                    if (HasValue(type.Symbols))
+                    {
+                        Types.Current.Value.RegisterType(MustNeverBeNull(type.Name), HighOrderType.ENUM);
+                        yield return new AvroEnum(MustNeverBeNull(type.Name), MustNeverBeNull(type.Symbols).ToArray(), languageFeature);
+                    }
+                    break;
+                }
+            case "fixed":
+                {
+                    if (HasValue(type.Size))
+                    {
+                        Types.Current.Value.RegisterType(MustNeverBeNull(type.Name), HighOrderType.FIXED);
+                        yield return new AvroFixed(MustNeverBeNull(type.Name), MustNeverBeNull(type.Size), languageFeature);
+                    }
+                    break;
+                }
+        }
+    }
+
     private IEnumerable<AvroElement> handle(Schema.Type type)
     {
         switch (type.TypeName)
@@ -112,6 +147,7 @@ public class AvroSchemaParser
                 }
         }
     }
+
     private IEnumerable<AvroElement> handleObjects(Schema.Type type)
     {
         Types.Current.Value.RegisterType(MustNeverBeNull(type.Name), HighOrderType.RECORD);

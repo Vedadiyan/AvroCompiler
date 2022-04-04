@@ -50,49 +50,80 @@ public class Lexicon
     }
     public static bool IsArrayType(JsonElement? jsonElement, ref int dimenstions, ref string? arrayItemType, ref string? itemGenericType)
     {
-        if (jsonElement?.TryGetProperty("items", out JsonElement item) == true)
+        if (jsonElement.Value.ValueKind == JsonValueKind.Object)
         {
-            if (item.ValueKind == JsonValueKind.String)
+            if (jsonElement?.TryGetProperty("items", out JsonElement item) == true)
             {
-                string? itemType = item.GetString();
-                if (itemType != null)
+                if (item.ValueKind == JsonValueKind.String)
                 {
-                    arrayItemType = itemType;
-                    return true;
+                    string? itemType = item.GetString();
+                    if (itemType != null)
+                    {
+                        arrayItemType = itemType;
+                        return true;
+                    }
                 }
-            }
-            else if (item.ValueKind == JsonValueKind.Object)
-            {
-                string tmp = item.GetRawText();
-                if (item.TryGetProperty("values", out JsonElement _item))
+                else if (item.ValueKind == JsonValueKind.Object)
                 {
-                    arrayItemType = "map";
-                    itemGenericType = MustNeverBeNull(_item.GetString());
-                    return true;
+                    string tmp = item.GetRawText();
+                    if (item.TryGetProperty("values", out JsonElement _item))
+                    {
+                        arrayItemType = "map";
+                        itemGenericType = MustNeverBeNull(_item.GetString());
+                        return true;
+                    }
+                    else
+                    {
+                        dimenstions++;
+                        IsArrayType(item, ref dimenstions, ref arrayItemType, ref itemGenericType);
+                        return true;
+                    }
                 }
                 else
                 {
-                    dimenstions++;
-                    IsArrayType(item, ref dimenstions, ref arrayItemType, ref itemGenericType);
-                    return true;
+                    ThrowIfUnpredictable();
                 }
-            }
-            else
-            {
-                ThrowIfUnpredictable();
             }
         }
         return false;
     }
-    public static bool IsEnum(JsonElement? jsonElement) {
-        if(jsonElement.Value.ValueKind == JsonValueKind.String) {
-            string? typeName = jsonElement.Value.GetString();
-            if(HasValue(typeName)) {
-                if(typeName == "enum") {
+    public static bool IsEnum(JsonElement jsonElement)
+    {
+        if (jsonElement.ValueKind == JsonValueKind.String)
+        {
+            string? typeName = jsonElement.GetString();
+            if (HasValue(typeName))
+            {
+                if (typeName == "enum")
+                {
                     return true;
                 }
             }
         }
+        return false;
+    }
+    public static bool IsMap(JsonElement jsonElement)
+    {
+        if (jsonElement.ValueKind == JsonValueKind.String)
+        {
+            string? typeName = jsonElement.GetString();
+            if (HasValue(typeName))
+            {
+                if (typeName == "map")
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    public static bool IsTypeDefinition(JsonElement jsonElement, out JsonElement typeDefinitions)
+    {
+        if (jsonElement.ValueKind == JsonValueKind.Object)
+        {
+            return jsonElement.TryGetProperty("type", out typeDefinitions);
+        }
+        typeDefinitions = default;
         return false;
     }
     public static void ThrowIfOtherwise(params bool[] args)
@@ -117,7 +148,7 @@ public class Lexicon
         }
         throw exception;
     }
-    public static T ShouldOr<T>(Nullable<T> value, Exception exception) where T: struct
+    public static T ShouldOr<T>(Nullable<T> value, Exception exception) where T : struct
     {
         if (value != null)
         {

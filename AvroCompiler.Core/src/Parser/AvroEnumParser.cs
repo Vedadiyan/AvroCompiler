@@ -3,6 +3,7 @@ using AvroCompiler.Core.Abstraction;
 using AvroCompiler.Core.Schema;
 using AvroCompiler.Core.Specifications;
 using static AvroCompiler.Core.Lexicon;
+using static AvroCompiler.Core.Exceptions.AvroCompliationErrorLexicon;
 
 namespace AvroCompiler.Core.Parser;
 
@@ -26,8 +27,8 @@ public class AvroEnumParser : IAvroParser<IEnumerable<AvroElement>>
         if (HasValue(field))
         {
             Field field = ShouldOr(this.field, new ArgumentNullException());
-            JsonElement type = ShouldOr(field.Type, new ArgumentNullException());
-            string name = ShouldOr(field.Name, new ArgumentNullException());
+            JsonElement type = ShouldOr(field.Type, new ArgumentNullException(MissingFieldType()));
+            string name = ShouldOr(field.Name, new ArgumentNullException(MissingFieldName()));
             if (IsEnum(type))
             {
                 Schema.Type enumType = ShouldOr(type.Deserialize<Schema.Type>(), new ArgumentException());
@@ -38,11 +39,25 @@ public class AvroEnumParser : IAvroParser<IEnumerable<AvroElement>>
                 }
                 yield return new AvroField(name, new string[] { name }, languageFeature);
             }
+            else
+            {
+                if (IsTypeDefinition(type, out JsonElement typeDefinition))
+                {
+                    if (IsEnum(typeDefinition))
+                    {
+                        Schema.Type definedType = ShouldOr(type.Deserialize<Schema.Type>(), new ArgumentNullException());
+                        foreach (var item in new AvroEnumParser(definedType, languageFeature).Parse())
+                        {
+                            yield return item;
+                        }
+                    }
+                }
+            }
         }
         else if (HasValue(type))
         {
-            Schema.Type type = ShouldOr(this.type, new ArgumentNullException());
-            string name = ShouldOr(type.Name, new ArgumentNullException());
+            Schema.Type type = ShouldOr(this.type, new ArgumentNullException(MissingFieldType()));
+            string name = ShouldOr(type.Name, new ArgumentNullException(MissingFieldName()));
             if (HasValue(type.Symbols))
             {
                 yield return new AvroEnum(name, MustNeverBeNull(type.Symbols).ToArray(), languageFeature);
@@ -50,7 +65,7 @@ public class AvroEnumParser : IAvroParser<IEnumerable<AvroElement>>
         }
         else
         {
-            throw new Exception("");
+            throw new Exception("Unpredicted Case in Enum Parser");
         }
     }
 }
