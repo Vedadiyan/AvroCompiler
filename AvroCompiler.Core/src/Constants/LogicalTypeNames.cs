@@ -4,7 +4,9 @@ public class LogicalTypeNames {
     private static readonly Dictionary<string, string> logicalTypeNameMap;
     static LogicalTypeNames() {
         logicalTypeNameMap = new Dictionary<string, string> {
-            ["time-millis"] = "TIMESTAMP"
+            ["time-millis"] = "TIMESTAMP",
+            ["timestamp-millis"] = "TIMESTAMP",
+            ["decimal"] = "DOUBLE"
         };
     }
     public static string? GetTypeNameFromLogicalType(string logicalTypeName) {
