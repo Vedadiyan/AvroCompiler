@@ -37,7 +37,7 @@ public class AutoMappers
     }
     public string GetForwardMapper()
     {
-        if (Types.Current.Value.TryGetType(fieldName!, out HighOrderType highOrderType))
+        if (selectedType != null && Types.Current.Value.TryGetType(selectedType!, out HighOrderType highOrderType))
         {
             if (highOrderType == HighOrderType.RECORD)
             {

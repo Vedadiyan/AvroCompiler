@@ -57,7 +57,8 @@ public class AvroRecordParser : IAvroParser<IEnumerable<AvroElement>>
                     JsonElement innerType = ShouldOr(field.Type, new ArgumentNullException());
                     Schema.Type innerTypes = ShouldOr(innerType.Deserialize<Schema.Type>(), new ArgumentNullException());
                     string typeName = ShouldOr(innerTypes.TypeName, new ArgumentNullException());
-                    if(typeName == "record") {
+                    if (typeName == "record")
+                    {
                         languageFeature.RegisterCodec(name, ShouldOr(innerType.GetRawText(), new ArgumentNullException()), null);
                     }
                     AvroRecordParser innerParser = new AvroRecordParser(ShouldOr(innerTypes, new ArgumentNullException()), languageFeature);
@@ -65,11 +66,12 @@ public class AvroRecordParser : IAvroParser<IEnumerable<AvroElement>>
                     {
                         yield return item;
                     }
-                    avroElements.Add(name, new AvroField(name, new string[] { name }, languageFeature));
+                    avroElements.Add(name, new AvroField(name, new string[] { ShouldOr(innerTypes.Name, new ArgumentNullException()) }, languageFeature));
                 }
 
             }
-            if(type.RawObject.ValueKind != JsonValueKind.Undefined) {
+            if (type.RawObject.ValueKind != JsonValueKind.Undefined)
+            {
                 languageFeature.RegisterCodec(ShouldOr(type.Name, new ArgumentNullException()), type.RawObject.GetRawText(), null);
             }
             Types.Current.Value.RegisterType(ShouldOr(type.Name, new ArgumentNullException()), HighOrderType.RECORD);

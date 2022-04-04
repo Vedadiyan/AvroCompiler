@@ -4,6 +4,7 @@ using AvroCompiler.Core.Schema;
 using AvroCompiler.Core.Specifications;
 using static AvroCompiler.Core.Lexicon;
 using static AvroCompiler.Core.Exceptions.AvroCompliationErrorLexicon;
+using AvroCompiler.Core.Contants;
 
 namespace AvroCompiler.Core.Parser;
 
@@ -43,6 +44,16 @@ public class AvroFieldParser : IAvroParser<IEnumerable<AvroElement>>
             {
                 string typeName = ShouldOr(type.GetString(), new ArgumentException($"Missing type name for field `{name}`"));
                 yield return new AvroField(name, new string[] { typeName }, languageFeature);
+            }
+            else if (type.TryGetProperty("logicalType", out JsonElement logicalType))
+            {
+                string? typeName = LogicalTypeNames.GetTypeNameFromLogicalType(ShouldOr(logicalType.GetString(), new ArgumentNullException()));
+                if(HasValue(typeName)){
+                    yield return new AvroField(name, new string[] { MustNeverBeNull(typeName) }, languageFeature);
+                }
+                else {
+                    throw new Exception("");
+                }
             }
         }
     }

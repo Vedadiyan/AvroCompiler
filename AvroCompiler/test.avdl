@@ -7,7 +7,7 @@ protocol Expedia {
       array<array<array<array<int>>>> test;
       Kind kind;
       Kind2 kind2;
-      Response response;
+      Response responsex;
       Hash hash;
       union {null, Hash} nullableHash;
       union {null, string} fff;
@@ -24,7 +24,8 @@ protocol Expedia {
       OK
     }
     record Response {
-      string results;
+      string Response;
     }
     Response GetResults(Request request);
+
 }

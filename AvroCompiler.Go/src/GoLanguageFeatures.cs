@@ -379,7 +379,11 @@ public class GoLanguageFeatures : ILanguageFeature
                 }
             case AvroTypes.TIMESTAMP:
                 {
-                    return "time";
+                    return "time.Time";
+                }
+            case AvroTypes.TIMESTAMP | AvroTypes.NULL:
+                {
+                    return "*time.Time";
                 }
         }
         throw new ArgumentException();

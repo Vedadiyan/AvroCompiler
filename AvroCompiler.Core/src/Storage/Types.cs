@@ -24,14 +24,14 @@ public class Types
     {
         lock (locker)
         {
-            return types.TryGetValue(name.ToUpper(), out highOrderType);
+            return types.TryGetValue(name, out highOrderType);
         }
     }
     public void RegisterType(string name, HighOrderType type)
     {
         lock (locker)
         {
-            types.Add(name.ToUpper(), type);
+            types.Add(name, type);
         }
     }
 }
