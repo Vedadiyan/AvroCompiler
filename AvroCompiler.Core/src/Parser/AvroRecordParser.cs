@@ -59,7 +59,7 @@ public class AvroRecordParser : IAvroParser<IEnumerable<AvroElement>>
                     string typeName = ShouldOr(innerTypes.TypeName, new ArgumentNullException());
                     if (typeName == "record")
                     {
-                        languageFeature.RegisterCodec(name, ShouldOr(innerType.GetRawText(), new ArgumentNullException()), null);
+                        languageFeature.RegisterCodec(ShouldOr(innerTypes.Name, new ArgumentNullException()), ShouldOr(innerType.GetRawText(), new ArgumentNullException()), null);
                     }
                     AvroRecordParser innerParser = new AvroRecordParser(ShouldOr(innerTypes, new ArgumentNullException()), languageFeature);
                     foreach (var item in innerParser.Parse())

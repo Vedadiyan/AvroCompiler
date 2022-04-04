@@ -191,6 +191,9 @@ public class GoLanguageFeatures : ILanguageFeature
         return @"
             import (
                 ""encoding/base64""
+                ""errors""
+                ""fmt""
+                ""time""
 
                 ""github.com/linkedin/goavro""
                 ""github.com/nats-io/nats.go""

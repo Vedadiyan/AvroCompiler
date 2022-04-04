@@ -37,7 +37,7 @@ public class AvroSchemaParser
             {
                 if (item is AvroRecord avroRecord)
                 {
-                    languageFeature.RegisterCodec(avroRecord.Name, avroRecord.RawJson, null);
+                    languageFeature.RegisterCodec(avroRecord.TypeNames[0]!, avroRecord.RawJson, null);
                 }
                 preview.AppendLine(item.Template());
             }

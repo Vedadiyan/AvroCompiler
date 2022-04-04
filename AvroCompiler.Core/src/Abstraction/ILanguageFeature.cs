@@ -20,6 +20,6 @@ public interface ILanguageFeature
     string GetMap(string elementType, string name, object? options);
     string GetRecord(string name, AvroElement[] fields, object? options);
     Task<string> Format(string input);
-    void RegisterCodec(string name, string schema, object? options);
+    void RegisterCodec(string typeName, string schema, object? options);
     void RegisterProtocol(string name);
 }
