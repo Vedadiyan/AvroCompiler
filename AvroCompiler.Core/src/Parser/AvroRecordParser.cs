@@ -67,7 +67,19 @@ public class AvroRecordParser : IAvroParser<IEnumerable<AvroElement>>
         }
         else
         {
-            yield return new AvroFixed(ShouldOr(type.Name, new ArgumentException()), ShouldOr(type.Size, new ArgumentException()), languageFeature);
+            if (type.TypeName == "enum")
+            {
+                string name = ShouldOr(type.Name, new ArgumentException());
+                yield return new AvroEnum(name, type.Symbols.ToArray(), languageFeature);
+            }
+            else if (type.TypeName == "fixed")
+            {
+                yield return new AvroFixed(ShouldOr(type.Name, new ArgumentException()), ShouldOr(type.Size, new ArgumentException()), languageFeature);
+            }
+            else
+            {
+                throw new Exception("");
+            }
         }
 
     }

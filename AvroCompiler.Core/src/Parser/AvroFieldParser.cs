@@ -42,7 +42,7 @@ public class AvroFieldParser : IAvroParser<IEnumerable<AvroElement>>
             //string typeName = ShouldOr(type.GetString(), new ArgumentException($"Missing type name for field `{name}`"));
             if (IsFieldType(type))
             {
-                yield return new AvroField(name, new string[] { name }, languageFeature);
+                yield return new AvroField(name, new string[] { ShouldOr(type.GetString(), new ArgumentException()) }, languageFeature);
             }
         }
     }
