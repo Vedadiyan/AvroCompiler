@@ -96,18 +96,18 @@ public class GoLanguageFeatures : ILanguageFeature
         {
             string base46Schema = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(schema));
             string codec = @$"
-func ({name.ToCamelCase()} {name.ToPascalCase()}) Codec() (*goavro.Codec, error) {{
-    avroSchemaInBase64 := ""{base46Schema}""
-    if value, err := base64.StdEncoding.DecodeString(avroSchemaInBase64); err == nil {{
-        if codec, err := goavro.NewCodec(string(value)); err == nil {{
-            return codec, nil
-        }} else {{
-            return nil, err
-        }}
-    }} else {{
-        return nil, err
-    }}
-}}
+                func ({name.ToCamelCase()} {name.ToPascalCase()}) Codec() (*goavro.Codec, error) {{
+                    avroSchemaInBase64 := ""{base46Schema}""
+                    if value, err := base64.StdEncoding.DecodeString(avroSchemaInBase64); err == nil {{
+                        if codec, err := goavro.NewCodec(string(value)); err == nil {{
+                            return codec, nil
+                        }} else {{
+                            return nil, err
+                        }}
+                    }} else {{
+                        return nil, err
+                    }}
+                }}
         ";
             codecs.Add(codec);
         }
@@ -189,12 +189,12 @@ func ({name.ToCamelCase()} {name.ToPascalCase()}) Codec() (*goavro.Codec, error)
     public string GetImports()
     {
         return @"
-import (
-    ""encoding/base64""
+            import (
+                ""encoding/base64""
 
-	""github.com/linkedin/goavro""
-    ""github.com/nats-io/nats.go""
-)
+                ""github.com/linkedin/goavro""
+                ""github.com/nats-io/nats.go""
+            )
         ";
     }
 
