@@ -8,6 +8,7 @@ using AvroCompiler.Core.Storage;
 using static AvroCompiler.Core.Lexicon;
 
 namespace AvroCompiler.Core.Parser;
+[Obsolete]
 public class AvroSchemaParser
 {
     private readonly ILanguageFeature languageFeature;
@@ -29,17 +30,19 @@ public class AvroSchemaParser
         if (HasValue(root))
         {
             preview.Append(languageFeature.GetComments());
-            preview.AppendLine(languageFeature.GetNamespace(root.Protocol!));
+            languageFeature.RegisterProtocol(root.Protocol!);
+            preview.AppendLine(languageFeature.GetNamespace());
             preview.AppendLine(languageFeature.GetImports());
             foreach (var item in parse(root).ToList())
             {
                 if (item is AvroRecord avroRecord)
                 {
-                    preview.AppendLine(languageFeature.GetCodec(avroRecord.Name, avroRecord.RawJson, null));
+                    languageFeature.RegisterCodec(avroRecord.Name, avroRecord.RawJson, null);
                 }
                 preview.AppendLine(item.Template());
             }
         }
+        preview.AppendLine(languageFeature.GetCodec());
         StringBuilder finalCode = new StringBuilder();
         foreach (var item in preview.ToString().Split("\r\n"))
         {

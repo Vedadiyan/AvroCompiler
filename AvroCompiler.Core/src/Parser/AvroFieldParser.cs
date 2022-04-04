@@ -39,10 +39,10 @@ public class AvroFieldParser : IAvroParser<IEnumerable<AvroElement>>
         {
             JsonElement type = ShouldOr(field.Type, new ArgumentNullException(MissingFieldType()));
             string name = ShouldOr(field.Name, new ArgumentNullException(MissingFieldName()));
-            //string typeName = ShouldOr(type.GetString(), new ArgumentException($"Missing type name for field `{name}`"));
             if (IsFieldType(type))
             {
-                yield return new AvroField(name, new string[] { ShouldOr(type.GetString(), new ArgumentException()) }, languageFeature);
+                string typeName = ShouldOr(type.GetString(), new ArgumentException($"Missing type name for field `{name}`"));
+                yield return new AvroField(name, new string[] { typeName }, languageFeature);
             }
         }
     }

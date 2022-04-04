@@ -10,11 +10,15 @@ namespace AvroCompiler.Go;
 public class GoLanguageFeatures : ILanguageFeature
 {
     private HashSet<string> types;
+    private HashSet<string> codecList;
     private HashSet<string> codecs;
+    private HashSet<string> protocols;
     public GoLanguageFeatures()
     {
         types = new HashSet<string>();
+        codecList = new HashSet<string>();
         codecs = new HashSet<string>();
+        protocols = new HashSet<string>();
     }
     public async Task<string> Format(string input)
     {
@@ -86,12 +90,12 @@ public class GoLanguageFeatures : ILanguageFeature
         return $"{name.ToPascalCase()} {dimensionBuilder.ToString()}{elementType}";
     }
 
-    public string GetCodec(string name, string schema, object? options)
+    public void RegisterCodec(string name, string schema, object? options)
     {
-        if (codecs.Add(name))
+        if (codecList.Add(name))
         {
             string base46Schema = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(schema));
-            return @$"
+            string codec = @$"
 func ({name.ToCamelCase()} {name.ToPascalCase()}) Codec() (*goavro.Codec, error) {{
     avroSchemaInBase64 := ""{base46Schema}""
     if value, err := base64.StdEncoding.DecodeString(avroSchemaInBase64); err == nil {{
@@ -105,8 +109,8 @@ func ({name.ToCamelCase()} {name.ToPascalCase()}) Codec() (*goavro.Codec, error)
     }}
 }}
         ";
+            codecs.Add(codec);
         }
-        return string.Empty;
     }
 
     public string GetComments()
@@ -260,9 +264,9 @@ import (
         }
         return "";
     }
-    public string GetNamespace(string @namespace)
+    public void RegisterProtocol(string protocol)
     {
-        return $"package {@namespace}";
+        protocols.Add($"package {protocol}");
     }
 
     public string GetRecord(string name, AvroElement[] fields, object? options)
@@ -382,4 +386,15 @@ import (
             return "";
         }
     }
+
+    public string GetNamespace()
+    {
+        return string.Join("\r\n", protocols);
+    }
+
+    public string GetCodec()
+    {
+        return string.Join("\r\n", codecs);
+    }
+
 }

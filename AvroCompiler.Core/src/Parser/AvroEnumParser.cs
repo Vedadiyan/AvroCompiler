@@ -39,20 +39,6 @@ public class AvroEnumParser : IAvroParser<IEnumerable<AvroElement>>
                 }
                 yield return new AvroField(name, new string[] { name }, languageFeature);
             }
-            else
-            {
-                // if (IsTypeDefinition(type, out JsonElement typeDefinition))
-                // {
-                //     if (IsEnum(typeDefinition))
-                //     {
-                //         Schema.Type definedType = ShouldOr(type.Deserialize<Schema.Type>(), new ArgumentNullException());
-                //         foreach (var item in new AvroEnumParser(definedType, languageFeature).Parse())
-                //         {
-                //             yield return item;
-                //         }
-                //     }
-                // }
-            }
         }
         else if (HasValue(type))
         {

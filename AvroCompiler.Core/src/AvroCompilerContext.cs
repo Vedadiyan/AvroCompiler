@@ -1,3 +1,4 @@
+using System.Text;
 using AvroCompiler.Core.Abstraction;
 using AvroCompiler.Core.AvroAPI;
 using AvroCompiler.Core.Parser;
@@ -22,9 +23,14 @@ public class AvroCompilerContext
             string tempFileName = TempFiles.Current.Value.GetTempFileName();
             File.WriteAllText(tempFileName, preProcessedFile);
             Stream stream = await AvroToolsApi.Idl(tempFileName);
-            AvroSchemaParser avroSchemaParser = new AvroSchemaParser(stream, languageFeature);
-            string parsedSchema = await avroSchemaParser.Parse();
-            File.WriteAllText(outputPath, parsedSchema);
+            AvroAvprParser avroAvprParser = new AvroAvprParser(stream, languageFeature);
+            IReadOnlyList<AvroElement> avroElements = avroAvprParser.Parse().ToList();
+            StringBuilder stringBuilder = new StringBuilder();
+            foreach(var avroElement in avroElements) {
+                stringBuilder.AppendLine(avroElement.Template());
+            }
+            stringBuilder.AppendLine(languageFeature.GetCodec());
+            File.WriteAllText(outputPath, stringBuilder.ToString());
         }
         finally
         {

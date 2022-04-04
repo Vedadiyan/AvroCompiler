@@ -6,9 +6,9 @@ public interface ILanguageFeature
 {
     string GetComments();
     string GetType(AvroTypes avroType);
-    string GetNamespace(string @namespace);
+    string GetNamespace();
     string GetImports();
-    string GetCodec(string name, string schema, object? options);
+    string GetCodec();
     string GetMessage(string name, IReadOnlyDictionary<string, string> request, string response, object? options);
     string GetField(AvroTypes avroType, string name, object? options);
     string GetField(string avroType, AvroTypes actualAvroType, string name, object? options);
@@ -20,4 +20,6 @@ public interface ILanguageFeature
     string GetMap(string elementType, string name, object? options);
     string GetRecord(string name, AvroElement[] fields, object? options);
     Task<string> Format(string input);
+    void RegisterCodec(string name, string schema, object? options);
+    void RegisterProtocol(string name);
 }
