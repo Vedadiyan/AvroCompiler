@@ -27,7 +27,8 @@ public class AvroMap : AvroElement
         }
         else
         {
-            return LanguageFeature.GetMap(MustOr(TypeNames, new AvroTypeException(Name))[0], Name, new { JsonPropertyName = Name });
+            //return LanguageFeature.GetMap(MustOr(TypeNames, new AvroTypeException(Name))[0], Name, new { JsonPropertyName = Name });
+            throw new Exception("A map item cannot be a complex type");
         }
     }
 }
