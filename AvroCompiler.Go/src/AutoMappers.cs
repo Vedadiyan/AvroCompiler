@@ -3,6 +3,8 @@ using System.Text.RegularExpressions;
 using AvroCompiler.Core.Contants;
 using AvroCompiler.Core.Storage;
 
+using static AvroCompiler.Core.Lexicon;
+
 namespace AvroCompiler.Go;
 
 public delegate string GetType(AvroTypes avroType);
@@ -35,7 +37,6 @@ public class AutoMappers
     }
     public string GetForwardMapper()
     {
-        return "";
         if ((avroType & AvroTypes.REFERENCE) != AvroTypes.REFERENCE)
         {
             return getForwardedPrimitiveType();
@@ -47,7 +48,6 @@ public class AutoMappers
     }
     public string GetBackwardMapper()
     {
-        return "";
         if (avroType != AvroTypes.UNDEFINED)
         {
             return getBackwardedPrimitiveNonArrayType();
@@ -59,15 +59,22 @@ public class AutoMappers
     }
     private string getForwardedPrimitiveType()
     {
+        string recordName = ShouldOr(this.recordName, new ArgumentNullException());
+        string fieldName = ShouldOr(this.fieldName, new ArgumentNullException());
         return @$"_map[""{fieldName}""] = {recordName.ToCamelCase()}.{fieldName.ToPascalCase()}";
     }
     private string getForwardedReferenceType()
     {
+        string recordName = ShouldOr(this.recordName, new ArgumentNullException());
+        string fieldName = ShouldOr(this.fieldName, new ArgumentNullException());
         return @$"_map[""{fieldName}""] = {recordName.ToCamelCase()}.{fieldName.ToPascalCase()}.ToMap()";
     }
     private string getBackwardedPrimitiveNonArrayType()
     {
-        return "";
+
+        string recordName = ShouldOr(this.recordName, new ArgumentNullException());
+        string fieldName = ShouldOr(this.fieldName, new ArgumentNullException());
+        //string selectedType = ShouldOr(this.selectedType, new ArgumentNullException());
         if ((avroType & AvroTypes.REFERENCE) != AvroTypes.REFERENCE)
         {
             if (avroType != AvroTypes.MAP)
@@ -80,14 +87,15 @@ public class AutoMappers
                     }}
                 ";
             }
-            else {
+            else
+            {
                 return @$"
                     if value, ok := value[""{fieldName}""].(map[string]any); ok {{
                         {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = value
                     }} else {{
                         // fmt.println(""WARNING: Type mismatch for"", ""{fieldName}"")
                     }}
-                "; 
+                ";
             }
         }
         else
@@ -142,13 +150,23 @@ public class AutoMappers
     }
     public string getBackwardedPimitiveArrayType()
     {
-        return "";
+        string recordName = ShouldOr(this.recordName, new ArgumentNullException());
+        string fieldName = ShouldOr(this.fieldName, new ArgumentNullException());
+        string fieldItem = ShouldOr(this.fieldItem, new ArgumentNullException());
         string type = "";
         bool isPrimitiveType;
         if (Enum.TryParse<AvroTypes>(fieldItem.ToUpper(), out AvroTypes avroType))
         {
-            type = getType(avroType);
-            isPrimitiveType = true;
+            if (avroType == AvroTypes.MAP)
+            {
+                type = "map";
+                isPrimitiveType = false;
+            }
+            else
+            {
+                type = getType(avroType);
+                isPrimitiveType = true;
+            }
         }
         else
         {
@@ -189,11 +207,52 @@ public class AutoMappers
             }
         }
         string output = "$next";
-        for (int i = 0; i < dimensions; i++)
+        if (dimensions == 1)
         {
-            if (i == 0)
+            if (type != "map")
             {
                 string tmp = @$"
+                if value, ok := value[""{fieldName}""].([]any); ok {{
+
+                        tmp{0} := make({getArrayDimensions(0)}{type}, len(value))
+                        for index, value := range value {{
+                            if value, ok := value.({type}); ok {{
+                                {getAssignment(0)}
+                            }}
+                        }}
+               
+                  
+                    }}
+                ";
+                output = output.Replace("$next", tmp);
+            }
+            else
+            {
+                string tmp = @$"
+                if value, ok := value[""{fieldName}""].([]any); ok {{
+             
+                        tmp{0} := make({getArrayDimensions(0)}map[{fieldGenericParameter}]any, len(value))
+                        for index, value := range value {{
+                            if value, ok := value.({fieldGenericParameter}); ok {{
+                                {getAssignment(0)}
+                            }}
+                        }}
+
+               
+                    }}
+                ";
+                output = output.Replace("$next", tmp);
+            }
+        }
+        else
+        {
+            for (int i = 0; i < dimensions; i++)
+            {
+                if (i == 0)
+                {
+                    if (type != "map")
+                    {
+                        string tmp = @$"
                     if value, ok := value[""{fieldName}""].([]any); ok {{
                         tmp{i} := make({getArrayDimensions(i)}{type}, len(value))
                         for index, value := range value {{
@@ -202,12 +261,28 @@ public class AutoMappers
                         {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = tmp{i}
                     }}
                 ";
-                output = output.Replace("$next", tmp);
+                        output = output.Replace("$next", tmp);
+                    }
+                    else
+                    {
+                        string tmp = @$"
+                    if value, ok := value[""{fieldName}""].([]any); ok {{
+                        tmp{i} := make({getArrayDimensions(i)}map[{fieldGenericParameter}]any, len(value))
+                        for index, value := range value {{
+                            $next    
+                        }}
+                        {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = tmp{i}
+                    }}
+                ";
+                        output = output.Replace("$next", tmp);
+                    }
 
-            }
-            else if (i < dimensions - 1)
-            {
-                string tmp = @$"
+                }
+                else if (i < dimensions - 1)
+                {
+                    if (type != "map")
+                    {
+                        string tmp = @$"
                     if value, ok := value.([]any); ok {{
                         tmp{i} := make({getArrayDimensions(i)}{type}, len(value))
                         for index, value := range value {{
@@ -216,11 +291,27 @@ public class AutoMappers
                         {getAssignment(i - 1)}
                     }}
                 ";
-                output = output.Replace("$next", tmp);
-            }
-            else
-            {
-                string tmp = @$"
+                        output = output.Replace("$next", tmp);
+                    }
+                    else
+                    {
+                        string tmp = @$"
+                    if value, ok := value.([]any); ok {{
+                        tmp{i} := make({getArrayDimensions(i)}map[{fieldGenericParameter}]any, len(value))
+                        for index, value := range value {{
+                            $next    
+                        }}
+                        {getAssignment(i - 1)}
+                    }}
+                ";
+                        output = output.Replace("$next", tmp);
+                    }
+                }
+                else
+                {
+                    if (type != "map")
+                    {
+                        string tmp = @$"
                     if value, ok := value.([]any); ok {{
                         tmp{i} := make({getArrayDimensions(i)}{type}, len(value))
                         for index, value := range value {{
@@ -231,7 +322,24 @@ public class AutoMappers
                         {getAssignment(i - 1)}
                     }}
                 ";
-                output = output.Replace("$next", tmp);
+                        output = output.Replace("$next", tmp);
+                    }
+                    else
+                    {
+                        string tmp = @$"
+                    if value, ok := value.([]any); ok {{
+                        tmp{i} := make({getArrayDimensions(i)}map[{fieldGenericParameter}]any, len(value))
+                        for index, value := range value {{
+                            if value, ok := value.({type}); ok {{
+                                {getAssignment(i)}
+                            }}
+                        }}
+                        {getAssignment(i - 1)}
+                    }}
+                ";
+                        output = output.Replace("$next", tmp);
+                    }
+                }
             }
         }
         Regex whitespace = new Regex("(  +)");
