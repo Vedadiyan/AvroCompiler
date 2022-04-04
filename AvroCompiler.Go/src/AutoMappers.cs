@@ -160,7 +160,7 @@ public class AutoMappers
             if (avroType == AvroTypes.MAP)
             {
                 type = "map";
-                isPrimitiveType = false;
+                isPrimitiveType = true;
             }
             else
             {
@@ -220,7 +220,7 @@ public class AutoMappers
                                 {getAssignment(0)}
                             }}
                         }}
-               
+               {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = tmp{0}
                   
                     }}
                 ";
@@ -233,11 +233,11 @@ public class AutoMappers
              
                         tmp{0} := make({getArrayDimensions(0)}map[{fieldGenericParameter}]any, len(value))
                         for index, value := range value {{
-                            if value, ok := value.({fieldGenericParameter}); ok {{
+                            if value, ok := value.(map[{fieldGenericParameter}]any); ok {{
                                 {getAssignment(0)}
                             }}
                         }}
-
+                    {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = tmp{0}
                
                     }}
                 ";
