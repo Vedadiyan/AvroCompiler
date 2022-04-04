@@ -14,7 +14,7 @@ public class Program
         try
         {
             AvroCompilerContext avroCompilerContext = new AvroCompilerContext("test.avdl", new GoLanguageFeatures());
-            await avroCompilerContext.Compile("Test.go");
+            await avroCompilerContext.Compile(@"C:\Users\Pouya\Desktop\Playground\gonatstest\TestProtocol", "Test.go");
         }
         catch(AvroCompilationException exception) {
             Console.WriteLine("{0}\r\n{1}", exception.Message, exception.Data["Error"]);

@@ -15,7 +15,7 @@ public class AvroCompilerContext
         avroIdlStr = File.ReadAllText(path);
         this.languageFeature = languageFeature;
     }
-    public async Task Compile(string outputPath)
+    public async Task Compile(string outputPath, string fileName)
     {
         try
         {
@@ -40,7 +40,11 @@ public class AvroCompilerContext
                 }
             }
             string code = await languageFeature.Format(finalCode.ToString());
-            File.WriteAllText(outputPath, code);
+            if(!Directory.Exists(outputPath)) {
+                Directory.CreateDirectory(outputPath);
+            }
+            string finalPath = Path.Combine(outputPath, fileName);
+            File.WriteAllText(finalPath, code);
         }
         finally
         {

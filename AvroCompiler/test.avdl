@@ -1,33 +1,31 @@
-@register("")
-protocol Expedia {
-    enum Kind2 {
+protocol TestProtocol {
+    enum NativelyHoistedEnum {
       OK2
     }
     record Request {
-      array<array<array<array<int>>>> test;
-      Kind kind;
-      Kind2 kind2;
-      Response responsex;
-      Hash hash;
-      union {null, Hash} nullableHash;
-      union {null, string} fff;
-      map<string> str;
-      union {map<string>, Kind} str2;
-      union {map<string>, Kind, null} str3;
-      union {null, map<string>} str4;
-      union {null, array<int>} str5;
-      array<map<string>> str6;
-      union {null, array<map<string>>} str7;
+      array<array<array<array<int>>>> crazyArray;
+      EnumThatNeedsHoisting enumThatNeedsHoisting;
+      NativelyHoistedEnum nativelyHoistedEnum;
+      Response referenceType;
+      Hash fixedType;
+      union {null, Hash} nonUnionNullableFixedType;
+      union {null, string} nonUnionNullablePrimitiveType;
+      map<string> simpleMap;
+      union {map<string>, COMPILER_ERROR_EXAMPLE} complexUnion;
+      union {map<string>, EnumThatNeedsHoisting, null} moreComplexUnion;
+      union {null, map<string>} nonUnionNullableMap;
+      union {null, array<int>} nonUnionNullableArray;
+      array<map<string>> arrayMap;
+      union {null, array<map<string>>} nonUnionNullableArrayMap;
     } 
     fixed Hash(16);
-    enum Kind {
+    enum EnumThatNeedsHoisting {
       OK
     }
     record Response {
-      string results;
-      time_ms time;
-      decimal(1, 1) fieldName;
+      string simplePrimitive;
+      time_ms logicalType;
+      decimal(1, 1) anotherLogicalType;
     }
     Response GetResults(Request request);
-
 }
