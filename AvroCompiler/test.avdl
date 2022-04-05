@@ -3,15 +3,15 @@ protocol TestProtocol {
       OK2
     }
     record Request {
-      array<array<array<array<int>>>> crazyArray;
-      EnumThatNeedsHoisting enumThatNeedsHoisting;
+      array<array<array<array<int>>>> crazy_Array;
+      EnumThatNeedsHoisting enumThatNeeds_Hoisting;
       NativelyHoistedEnum nativelyHoistedEnum;
       Response referenceType;
       Hash fixedType;
       union {null, Hash} nonUnionNullableFixedType;
       union {null, string} nonUnionNullablePrimitiveType;
       map<string> simpleMap;
-      union {map<string>, COMPILER_ERROR_EXAMPLE} complexUnion;
+      union {map<string>, EnumThatNeedsHoisting} complexUnion;
       union {map<string>, EnumThatNeedsHoisting, null} moreComplexUnion;
       union {null, map<string>} nonUnionNullableMap;
       union {null, array<int>} nonUnionNullableArray;

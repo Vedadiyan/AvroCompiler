@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace AvroCompiler.Go;
 
 public static class StringExtensions
@@ -6,7 +8,11 @@ public static class StringExtensions
     {
         if (str.Length > 0)
         {
-            return char.ToUpper(str[0]) + str.Substring(1, str.Length - 1);
+            StringBuilder stringBuilder = new StringBuilder();
+            foreach(var i in str.Split('_')) {
+                stringBuilder.Append(char.ToUpper(i[0])).Append(i.Substring(1, i.Length -1));
+            }
+            return stringBuilder.ToString();
         }
         return str;
     }
@@ -14,7 +20,8 @@ public static class StringExtensions
     {
         if (str.Length > 0)
         {
-            return char.ToLower(str[0]) + str.Substring(1, str.Length - 1);
+            string tmp = str.ToPascalCase();
+            return char.ToLower(tmp[0]) + tmp.Substring(1, str.Length - 1);
         }
         return str;
     }

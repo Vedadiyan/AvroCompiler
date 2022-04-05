@@ -78,7 +78,18 @@ public class AutoMappers
     }
     private string getBackwardedPrimitiveNonArrayType()
     {
-
+        string getSetter(string recordName, string fieldName, string type, Func<string> setter)
+        {
+            return @$"
+                    if value, ok := value[""{fieldName}""].({type}); ok {{
+                        {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = {setter()}
+                    }} else {{
+                        log.WithFields(log.Fields{{
+                            ""Field Name"": ""{fieldName.ToPascalCase()}"",
+                        }}).Warning(""Type Mismatch"")
+                    }}
+                ";
+        }
         string recordName = ShouldOr(this.recordName, new ArgumentNullException());
         string fieldName = ShouldOr(this.fieldName, new ArgumentNullException());
         //string selectedType = ShouldOr(this.selectedType, new ArgumentNullException());
@@ -86,71 +97,35 @@ public class AutoMappers
         {
             if (avroType != AvroTypes.MAP)
             {
-                return @$"
-                    if value, ok := value[""{fieldName}""].({getType(avroType)}); ok {{
-                        {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = value
-                    }} else {{
-                        fmt.Println(""WARNING: Type mismatch for"", ""{fieldName}"")
-                    }}
-                ";
+                return getSetter(recordName, fieldName, getType(avroType), () => "value");
             }
             else
             {
-                return @$"
-                    if value, ok := value[""{fieldName}""].(map[string]any); ok {{
-                        {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = value
-                    }} else {{
-                        fmt.Println(""WARNING: Type mismatch for"", ""{fieldName}"")
-                    }}
-                ";
+                return getSetter(recordName, fieldName, "map[string]any", () => "value");
             }
         }
         else
         {
-            if (Types.Current.Value.TryGetType(fieldName, out HighOrderType highOrderType))
+            if (Types.Current.Value.TryGetType(selectedType!, out HighOrderType highOrderType))
             {
                 if (highOrderType == HighOrderType.RECORD)
                 {
-                    return @$"
-                        if value, ok := value[""{fieldName}""].(map[string]any); ok {{
-                            {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = new{fieldName.ToPascalCase()}(value)
-                        }} else {{
-                            fmt.Println(""WARNING: Type mismatch for"", ""{fieldName}"")
-                        }}
-                    ";
+                    return getSetter(recordName, fieldName, "map[string]any", () => $"new{fieldName.ToPascalCase()}(value)");
                 }
                 else
                 {
-                    return @$"
-                        if value, ok := value[""{fieldName}""].({fieldName.ToPascalCase()}); ok {{
-                            {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = value
-                        }} else {{
-                            fmt.Println(""WARNING: Type mismatch for"", ""{fieldName}"")
-                        }}
-                    ";
+                    return getSetter(recordName, fieldName, selectedType!.ToPascalCase(), () => "value");
                 }
             }
             else
             {
                 if ((avroType & AvroTypes.NULL) == AvroTypes.NULL)
                 {
-                    return @$"
-                        if value, ok := value[""{fieldName}""].(*{selectedType!.ToPascalCase()}); ok {{
-                            {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = value
-                        }} else {{
-                            fmt.Println(""WARNING: Type mismatch for"", ""{fieldName}"")
-                        }}
-                    ";
+                    return getSetter(recordName, fieldName, $"*{selectedType!.ToPascalCase()}", () => "value");
                 }
                 else
                 {
-                    return @$"
-                        if value, ok := value[""{fieldName}""].({selectedType?.ToPascalCase()}); ok {{
-                            {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = value
-                        }} else {{
-                            fmt.Println(""WARNING: Type mismatch for"", ""{fieldName}"")
-                        }}
-                    ";
+                    return getSetter(recordName, fieldName, selectedType!.ToPascalCase(), () => "value");
                 }
             }
         }
@@ -225,12 +200,16 @@ public class AutoMappers
                             if value, ok := value.({type}); ok {{
                                 {getAssignment(0)}
                             }} else {{
-                                fmt.Println(""WARNING: Type mismatch for"", ""{fieldName}"")
+                                log.WithFields(log.Fields{{
+                                    ""Field Name"": ""{fieldName.ToPascalCase()}"",
+                                }}).Warning(""Type Mismatch"")
                             }}
                         }}
                         {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = tmp{0}
                     }} else {{
-                        fmt.Println(""WARNING: Type mismatch for"", ""{fieldName}"")
+                        log.WithFields(log.Fields{{
+                            ""Field Name"": ""{fieldName.ToPascalCase()}"",
+                        }}).Warning(""Type Mismatch"")
                     }}
                 ";
                 output = output.Replace("$next", tmp);
@@ -244,12 +223,16 @@ public class AutoMappers
                             if value, ok := value.(map[{fieldGenericParameter}]any); ok {{
                                 {getAssignment(0)}
                             }} else {{
-                                fmt.Println(""WARNING: Type mismatch for"", ""{fieldName}"")
+                                log.WithFields(log.Fields{{
+                                    ""Field Name"": ""{fieldName.ToPascalCase()}"",
+                                }}).Warning(""Type Mismatch"")
                             }}
                         }}
                         {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = tmp{0}
                     }} else {{
-                        fmt.Println(""WARNING: Type mismatch for"", ""{fieldName}"")
+                        log.WithFields(log.Fields{{
+                            ""Field Name"": ""{fieldName.ToPascalCase()}"",
+                        }}).Warning(""Type Mismatch"")
                     }}
                 ";
                 output = output.Replace("$next", tmp);
@@ -271,7 +254,9 @@ public class AutoMappers
                                 }}
                                 {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = tmp{i}
                             }} else {{
-                                fmt.Println(""WARNING: Type mismatch for"", ""{fieldName}"")
+                                log.WithFields(log.Fields{{
+                                    ""Field Name"": ""{fieldName.ToPascalCase()}"",
+                                }}).Warning(""Type Mismatch"")
                             }}
                         ";
                         output = output.Replace("$next", tmp);
@@ -286,7 +271,9 @@ public class AutoMappers
                                 }}
                                 {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = tmp{i}
                             }} else {{
-                                fmt.Println(""WARNING: Type mismatch for"", ""{fieldName}"")
+                                log.WithFields(log.Fields{{
+                                    ""Field Name"": ""{fieldName.ToPascalCase()}"",
+                                }}).Warning(""Type Mismatch"")
                             }}
                         ";
                         output = output.Replace("$next", tmp);
@@ -305,7 +292,9 @@ public class AutoMappers
                                 }}
                                 {getAssignment(i - 1)}
                             }} else {{
-                                fmt.Println(""WARNING: Type mismatch for"", ""{fieldName}"")
+                                log.WithFields(log.Fields{{
+                                    ""Field Name"": ""{fieldName.ToPascalCase()}"",
+                                }}).Warning(""Type Mismatch"")
                             }}
                         ";
                         output = output.Replace("$next", tmp);
@@ -320,7 +309,9 @@ public class AutoMappers
                                 }}
                                 {getAssignment(i - 1)}
                             }} else {{
-                                fmt.Println(""WARNING: Type mismatch for"", ""{fieldName}"")
+                                log.WithFields(log.Fields{{
+                                    ""Field Name"": ""{fieldName.ToPascalCase()}"",
+                                }}).Warning(""Type Mismatch"")
                             }}
                         ";
                         output = output.Replace("$next", tmp);
@@ -337,12 +328,16 @@ public class AutoMappers
                                     if value, ok := value.({type}); ok {{
                                         {getAssignment(i)}
                                     }} else {{
-                                        fmt.Println(""WARNING: Type mismatch for"", ""{fieldName}"")
+                                        log.WithFields(log.Fields{{
+                                            ""Field Name"": ""{fieldName.ToPascalCase()}"",
+                                        }}).Warning(""Type Mismatch"")
                                     }}
                                 }}
                                 {getAssignment(i - 1)}
                             }} else {{
-                                fmt.Println(""WARNING: Type mismatch for"", ""{fieldName}"")
+                                log.WithFields(log.Fields{{
+                                    ""Field Name"": ""{fieldName.ToPascalCase()}"",
+                                }}).Warning(""Type Mismatch"")
                             }}
                         ";
                         output = output.Replace("$next", tmp);
@@ -356,12 +351,16 @@ public class AutoMappers
                                     if value, ok := value.({type}); ok {{
                                         {getAssignment(i)}
                                     }} else {{
-                                        fmt.Println(""WARNING: Type mismatch for"", ""{fieldName}"")
+                                        log.WithFields(log.Fields{{
+                                            ""Field Name"": ""{fieldName.ToPascalCase()}"",
+                                        }}).Warning(""Type Mismatch"")
                                     }}
                                 }}
                                 {getAssignment(i - 1)}
                             }} else {{
-                                fmt.Println(""WARNING: Type mismatch for"", ""{fieldName}"")
+                                log.WithFields(log.Fields{{
+                                    ""Field Name"": ""{fieldName.ToPascalCase()}"",
+                                }}).Warning(""Type Mismatch"")
                             }}
                         ";
                         output = output.Replace("$next", tmp);

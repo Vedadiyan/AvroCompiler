@@ -13,7 +13,7 @@ public class Program
     {
         try
         {
-            AvroCompilerContext avroCompilerContext = new AvroCompilerContext("test.avdl", new GoLanguageFeatures());
+            AvroCompilerContext avroCompilerContext = new AvroCompilerContext("token.avdl", new GoLanguageFeatures());
             await avroCompilerContext.Compile(@"C:\Users\Pouya\Desktop\Playground\gonatstest\TestProtocol", "Test.go");
         }
         catch(AvroCompilationException exception) {
