@@ -1,11 +1,25 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
 namespace AvroCompiler.Core.Schema;
 public class Type
 {
-    public string? type { get; set; }
-    public string? name { get; set; }
-    public List<string>? symbols { get; set; }
-    public string? order { get; set; }
-    public List<string>? aliases { get; set; }
-    public int? size { get; set; }
-    public List<Field>? fields { get; set; }
+    [JsonPropertyName("type")]
+    public string? TypeName { get; set; }
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
+    [JsonPropertyName("namespace")]
+    public string? Namespace { get; set; }
+    [JsonPropertyName("symbols")]
+    public List<string>? Symbols { get; set; }
+    [JsonPropertyName("order")]
+    public string? Order { get; set; }
+    [JsonPropertyName("aliases")]
+    public List<string>? Aliases { get; set; }
+    [JsonPropertyName("size")]
+    public int? Size { get; set; }
+    [JsonPropertyName("fields")]
+    public List<Field>? Fields { get; set; }
+    [JsonIgnore]
+    public JsonElement RawObject { get; set; }
 }

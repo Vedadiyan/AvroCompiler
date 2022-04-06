@@ -1,11 +1,17 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace AvroCompiler.Core.Schema;
 public class Root
 {
-    public string? protocol { get; set; }
-    public string? @namespace { get; set; }
-    public string? doc { get; set; }
-    public List<JsonElement>? types { get; set; }
-    public Dictionary<string, Message>? messages { get; set; }
+    [JsonPropertyName("protocol")]
+    public string? Protocol { get; set; }
+    [JsonPropertyName("namespace")]
+    public string? Namespace { get; set; }
+    [JsonPropertyName("doc")]
+    public string? Doc { get; set; }
+    [JsonPropertyName("types")]
+    public List<Schema.Type>? Types { get; set; }
+    [JsonPropertyName("messages")]
+    public Dictionary<string, Message>? Messages { get; set; }
 }

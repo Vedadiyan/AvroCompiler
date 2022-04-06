@@ -1,80 +1,234 @@
+using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 using AvroCompiler.Core.Abstraction;
 using AvroCompiler.Core.Contants;
+using AvroCompiler.Core.Specifications;
 
-namespace AvroCompiler;
+namespace AvroCompiler.Go;
 
 public class GoLanguageFeatures : ILanguageFeature
 {
-    public string GetArray(AvroTypes elementType, string name, object? options)
+    private HashSet<string> types;
+    private HashSet<string> codecList;
+    private HashSet<string> codecs;
+    private HashSet<string> protocols;
+    public GoLanguageFeatures()
     {
-        return $"{toPascalCase(name)} []{GetType(elementType)}";
+        types = new HashSet<string>();
+        codecList = new HashSet<string>();
+        codecs = new HashSet<string>();
+        protocols = new HashSet<string>();
     }
-    public string GetArray(string elementType, string name, object? options)
+    public async Task<string> Format(string input)
     {
-        return $"{toPascalCase(name)} []{elementType}";
+        string tempFile = Path.GetTempFileName();
+        File.WriteAllText(tempFile, input);
+        ProcessStartInfo processStartInfo = new ProcessStartInfo("gofmt", $"-w {tempFile}");
+        Process? process = Process.Start(processStartInfo);
+        if (process != null)
+        {
+            process.Start();
+            await process.WaitForExitAsync();
+            string output = File.ReadAllText(tempFile);
+            File.Delete(tempFile);
+            return output;
+        }
+        throw new Exception("Could not format the code");
     }
 
-    public string GetCodec(string name, string schema, object? options)
+    public string GetArray(int dimensions, AvroTypes elementType, string? elementGenericType, string name, object? options)
     {
-        string base46Schema = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(schema));
+        StringBuilder dimensionBuilder = new StringBuilder();
+        for (int i = 0; i < dimensions; i++)
+        {
+            dimensionBuilder.Append("[]");
+        }
+        if (options != null)
+        {
+            PropertyInfo[] properties = options.GetType().GetProperties();
+            PropertyInfo? jsonPropertyNameProperty = properties.FirstOrDefault(x => x.Name == "JsonPropertyName");
+            if (jsonPropertyNameProperty != null)
+            {
+                string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
+                if (elementType != AvroTypes.MAP)
+                {
+                    return @$"{name.ToPascalCase()} {dimensionBuilder.ToString()}{GetType(elementType)} `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""`";
+                }
+                else
+                {
+                    return @$"{name.ToPascalCase()} {dimensionBuilder.ToString()}map[{elementGenericType}]any `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""`";
+                }
+            }
+        }
+        if (elementType != AvroTypes.MAP)
+        {
+            return $"{name.ToPascalCase()} {dimensionBuilder.ToString()}{GetType(elementType)}";
+        }
+        else
+        {
+            return $"{name.ToPascalCase()} {dimensionBuilder.ToString()}map[{elementGenericType}]any";
+        }
+    }
+    public string GetArray(int dimensions, string elementType, string name, object? options)
+    {
+        StringBuilder dimensionBuilder = new StringBuilder();
+        for (int i = 0; i < dimensions; i++)
+        {
+            dimensionBuilder.Append("[]");
+        }
+        if (options != null)
+        {
+            PropertyInfo[] properties = options.GetType().GetProperties();
+            PropertyInfo? jsonPropertyNameProperty = properties.FirstOrDefault(x => x.Name == "JsonPropertyName");
+            if (jsonPropertyNameProperty != null)
+            {
+                string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
+                return @$"{name.ToPascalCase()} {dimensionBuilder.ToString()}{elementType} `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""`";
+            }
+        }
+        return $"{name.ToPascalCase()} {dimensionBuilder.ToString()}{elementType}";
+    }
+
+    public void RegisterCodec(string name, string schema, object? options)
+    {
+        if (codecList.Add(name))
+        {
+            string base46Schema = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(schema));
+            string codec = @$"
+                func ({name.ToCamelCase()} {name.ToPascalCase()}) Codec() (*goavro.Codec, error) {{
+                    avroSchemaInBase64 := ""{base46Schema}""
+                    if value, err := base64.StdEncoding.DecodeString(avroSchemaInBase64); err == nil {{
+                        if codec, err := goavro.NewCodec(string(value)); err == nil {{
+                            return codec, nil
+                        }} else {{
+                            return nil, err
+                        }}
+                    }} else {{
+                        return nil, err
+                    }}
+                }}
+        ";
+            codecs.Add(codec);
+        }
+    }
+
+    public string GetComments()
+    {
         return @$"
-func ({toCamelCase(name)} {toPascalCase(name)}) Codec() (*goavro.Codec, error) {{
-    avroSchemaInBase64 := ""{base46Schema}""
-    if value, err := base64.StdEncoding.DecodeString(avroSchemaInBase64); err == nil {{
-        if codec, err := goavro.NewCodec(string(value)); err == nil {{
-            return codec, nil
-        }} else {{
-            return nil, err
-        }}
-    }} else {{
-        return nil, err
-    }}
-}}
+/*                                        
+    The following code has been automatically generated by the 
+    AvroCompiler Utility 
+    ----------------------------------------------------------
+    WARNING:    Please DO NOT modify the content of this file.
+    ----------------------------------------------------------
+    Timestamp:  {DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")}
+    ----------------------------------------------------------
+    License:    MIT License
+    Author:     Pouya Vedadiyan
+*/
         ";
     }
 
     public string GetEnum(string name, string[] symbols, object? options)
     {
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.AppendLine($"type {toPascalCase(name)} int");
-        stringBuilder.AppendLine("const (");
-        for (int i = 0; i < symbols.Length; i++)
+        if (types.Add(name))
         {
-            stringBuilder.AppendLine($"    {symbols[i]} {toPascalCase(name)} = {i}");
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.AppendLine($"type {name.ToPascalCase()} int");
+            stringBuilder.AppendLine("const (");
+            for (int i = 0; i < symbols.Length; i++)
+            {
+                stringBuilder.AppendLine($"    {symbols[i]} {name.ToPascalCase()} = {i}");
+            }
+            stringBuilder.AppendLine(")");
+            return stringBuilder.ToString();
         }
-        stringBuilder.AppendLine(")");
-        return stringBuilder.ToString();
+        return string.Empty;
     }
 
     public string GetField(AvroTypes type, string name, object? options)
     {
-        return $"{toPascalCase(name)} {GetType(type)}";
+        if (options != null)
+        {
+            PropertyInfo[] properties = options.GetType().GetProperties();
+            PropertyInfo? jsonPropertyNameProperty = properties.FirstOrDefault(x => x.Name == "JsonPropertyName");
+            if (jsonPropertyNameProperty != null)
+            {
+                string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
+                return @$"{name.ToPascalCase()} {GetType(type)} `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""`";
+            }
+        }
+        return $"{name.ToPascalCase()} {GetType(type)}";
     }
 
     public string GetField(string type, AvroTypes actualType, string name, object? options)
     {
-        return $"{toPascalCase(name)} {nullable(actualType)}{type}";
+        if (options != null)
+        {
+            PropertyInfo[] properties = options.GetType().GetProperties();
+            PropertyInfo? jsonPropertyNameProperty = properties.FirstOrDefault(x => x.Name == "JsonPropertyName");
+            if (jsonPropertyNameProperty != null)
+            {
+                string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
+                return @$"{name.ToPascalCase()} {nullable(actualType)}{type.ToPascalCase()} `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""`";
+            }
+        }
+        return $"{name.ToPascalCase()} {nullable(actualType)}{type.ToPascalCase()}";
     }
 
     public string GetFixed(string name, object? options)
     {
-        return $"type {toPascalCase(name)} string";
+        if (types.Add(name))
+        {
+            return $"type {name.ToPascalCase()} string";
+        }
+        return string.Empty;
     }
 
     public string GetImports()
     {
         return @"
-import (
-    ""encoding/base64""
+            import (
+                ""encoding/base64""
+                ""errors""
+                ""time""
 
-	""github.com/linkedin/goavro""
-    ""github.com/nats-io/nats.go""
-)
+                goavro ""github.com/linkedin/goavro""
+                nats ""github.com/nats-io/nats.go""
+                log ""github.com/sirupsen/logrus""
+            )
         ";
     }
 
+    public string GetMap(AvroTypes elementType, string name, object? options)
+    {
+        if (options != null)
+        {
+            PropertyInfo[] properties = options.GetType().GetProperties();
+            PropertyInfo? jsonPropertyNameProperty = properties.FirstOrDefault(x => x.Name == "JsonPropertyName");
+            if (jsonPropertyNameProperty != null)
+            {
+                string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
+                return @$"{name.ToPascalCase()} map[{GetType(elementType)}]any `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""`";
+            }
+        }
+        return $"{name.ToPascalCase()} map[{GetType(elementType)}]any";
+    }
+    public string GetMap(string elementType, string name, object? options)
+    {
+        if (options != null)
+        {
+            PropertyInfo[] properties = options.GetType().GetProperties();
+            PropertyInfo? jsonPropertyNameProperty = properties.FirstOrDefault(x => x.Name == "JsonPropertyName");
+            if (jsonPropertyNameProperty != null)
+            {
+                string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
+                return @$"{name.ToPascalCase()} map[{elementType}]any `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""`";
+            }
+        }
+        return $"{name.ToPascalCase()} map[{elementType}]any";
+    }
     public string GetMessage(string name, IReadOnlyDictionary<string, string> request, string response, object? options)
     {
         if (request.Count == 1)
@@ -85,31 +239,14 @@ import (
             {
                 return "";
             }
-            string natsMessage = "";
             string type = request[request.Keys.FirstOrDefault()!];
             if (!Enum.TryParse<AvroTypes>(type.ToUpper(), out AvroTypes avroType))
             {
                 object? error = _options?.FirstOrDefault(x => x.Name == "Error")?.GetValue(options);
-
-                if (response != "null")
-                {
-                    if (error == null)
-                    {
-                        output.Append(@$"type {toPascalCase(name)} func({toCamelCase(type)} {toPascalCase(type)}) {response}");
-
-                    }
-                    else
-                    {
-                        output.Append(@$"type {toPascalCase(name)} func({toCamelCase(type)} {toPascalCase(type)}) ({response}, *{error})");
-                    }
-                }
-                else
-                {
-                    output.Append(@$"type {toPascalCase(name)} func({toCamelCase(type)} {toPascalCase(type)}) *{error}");
-                }
-                natsMessage = getNatsListener(name, type, response, "", error != null ? (string)error : null);
+                NatsClientCreator natsClientCreator = new NatsClientCreator(name, "", type, response, error != null ? (string)error : null);
                 output.AppendLine();
-                output.AppendLine(natsMessage);
+                output.AppendLine(natsClientCreator.GetFunctionType());
+                output.Append(natsClientCreator.GetFunction());
             }
             return output.ToString();
         }
@@ -121,284 +258,83 @@ import (
             {
                 return "";
             }
-            string natsMessage = "";
             object? error = _options?.FirstOrDefault(x => x.Name == "Error")?.GetValue(options);
-
-            if (response != "null")
-            {
-                if (error == null)
-                {
-                    output.Append(@$"type {toPascalCase(name)} func() {response}");
-
-                }
-                else
-                {
-                    output.Append(@$"type {toPascalCase(name)} func() ({response}, *{error})");
-                }
-            }
-            else
-            {
-                if (error == null)
-                {
-                    output.Append(@$"type {toPascalCase(name)} func()");
-                }
-                else
-                {
-                    output.Append(@$"type {toPascalCase(name)} func() *{error}");
-                }
-            }
-            natsMessage = getNatsListener(name, null, response, "", error != null ? (string)error : null);
+            NatsClientCreator natsClientCreator = new NatsClientCreator(name, "", null, response, error != null ? (string)error : null);
             output.AppendLine();
-            output.AppendLine(natsMessage);
+            output.AppendLine(natsClientCreator.GetFunctionType());
+            output.AppendLine(natsClientCreator.GetFunction());
             return output.ToString();
         }
         return "";
     }
-    private string getNatsListener(string name, string? request, string response, string @namespace, string? error)
+    public void RegisterProtocol(string protocol)
     {
-        string namePascalCase = toPascalCase(name);
-        string nameCamelCase = toCamelCase(name);
-        string mainTemplate = @$"
-    $requestCodec
-    $responseCodec
-    $errorCodec
-    $subscription
-            ";
-        string subscriptionTemplate =
-@$"conn.Subscribe(""{@namespace}"", func(msg *nats.Msg) {{ 
-        $handler
-    }})
-            ";
-        mainTemplate = mainTemplate.Replace("$subscription", subscriptionTemplate);
-        string? requestCodecTemplate = null;
-        string? responseCodecTemplate = null;
-        string? errorCodecTemplate = null;
-        string? errorPascalCase = null;
-        string? requestPascalCase = null;
-        string? responsePascalCase = null;
-        string? requestCamelCase = null;
-        string handlerTemplate;
-        if (request != null)
-        {
-            requestPascalCase = toPascalCase(request);
-            requestCamelCase = toCamelCase(request);
-            requestCodecTemplate =
-@$"requestCodec, requestCodecError := {requestPascalCase}.Codec({requestPascalCase} {{}})
-    if requestCodecError != nil {{
-        panic(requestCodecError)
-    }}";
-        }
-        if (error != null)
-        {
-            errorPascalCase = toPascalCase(error);
-            errorCodecTemplate =
-$@"errorCodec, errorCodecError := {errorPascalCase}.Codec({errorPascalCase} {{}})
-    if errorCodecError != nil {{
-        panic(errorCodecError)
-    }}";
-        }
-        if (response != "null")
-        {
-            responsePascalCase = toPascalCase(response);
-            responseCodecTemplate =
-@$"responseCodec, responseCodedError := {responsePascalCase}.Codec({responsePascalCase} {{}})
-    if responseCodedError != nil {{
-        panic(responseCodedError)
-    }}";
-        }
-        if (request != null)
-        {
-            mainTemplate = mainTemplate.Replace("$requestCodec", requestCodecTemplate);
-            handlerTemplate =
-@$"message, _, messageError := requestCodec.NativeFromBinary(msg.Data);
-        if messageError != nil {{
-            msg.Term()
-        }} 
-        if messageValue, ok := message.({requestPascalCase}); ok {{
-            $handle
-        }} else {{
-            msg.Term()
-        }}";
-            mainTemplate =
-@$"func ListenTo{namePascalCase}(conn *nats.Conn, {nameCamelCase} {namePascalCase}) {{
-    {mainTemplate}
-}}";
-            if (response != "null")
-            {
-                mainTemplate = mainTemplate.Replace("$handler", handlerTemplate);
-                mainTemplate = mainTemplate.Replace("$responseCodec", responseCodecTemplate);
-                string responseTemplate;
-                if (error != null)
-                {
-                    mainTemplate = mainTemplate.Replace("$errorCodec", errorCodecTemplate);
-                    responseTemplate =
-             @$"if response, responseError := {nameCamelCase}(messageValue); responseError == nil {{
-                if responseEncoded, err := responseCodec.BinaryFromNative(nil, response); err == nil {{
-                    msg.Respond(responseEncoded)
-                }} else {{
-                    msg.Term()
-                }}
-            }} else {{
-                if errorEncoded, err := errorCodec.BinaryFromNative(nil, responseError); err == nil {{
-                    msg.Respond(errorEncoded)
-                }} else {{
-                    msg.Term()
-                }}
-            }}";
-
-                }
-                else
-                {
-                    mainTemplate = mainTemplate.Replace("$errorCodec", "");
-                    responseTemplate =
-         @$"response := {nameCamelCase}(messageValue);
-            if responseEncoded, err := responseCodec.BinaryFromNative(nil, response); err == nil {{
-                msg.Respond(responseEncoded)
-            }} else {{
-                msg.Term()
-            }}";
-                }
-                mainTemplate = mainTemplate.Replace("$handle", responseTemplate);
-            }
-            else
-            {
-                mainTemplate = mainTemplate.Replace("$responseCodec", "");
-                handlerTemplate =
-         @$"message, _, messageError := requestCodec.NativeFromBinary(msg.Data);
-            if messageError != nil {{
-                msg.Term();
-            }} 
-            if messageValue, ok := message.({requestPascalCase}); ok {{
-                $handle
-            }} else {{
-                msg.Term()
-            }}";
-                mainTemplate = mainTemplate.Replace("$handler", handlerTemplate);
-                string handleTemplate;
-                if (error != null)
-                {
-                    mainTemplate = mainTemplate.Replace("$errorCodec", "");
-                    handleTemplate =
-          @$"if error := {nameCamelCase}(messageValue); error == nil {{
-                msg.Ack()
-            }} else {{
-                msg.Term()
-            }}";
-                }
-                else
-                {
-                    mainTemplate = mainTemplate.Replace("$errorCodec", "");
-                    handleTemplate =
-         @$"{namePascalCase}(messageValue)
-            msg.Ack()";
-                }
-                mainTemplate = mainTemplate.Replace("$handle", handleTemplate);
-            }
-        }
-        else
-        {
-            if (response != "null")
-            {
-                mainTemplate =
-                @$"func ListenTo{namePascalCase}(conn *nats.Conn, {nameCamelCase} {namePascalCase}) {{
-    {mainTemplate}
-}}";
-                mainTemplate = mainTemplate.Replace("$requestCodec", "");
-                mainTemplate = mainTemplate.Replace("$responseCodec", responseCodecTemplate);
-                if (error != null)
-                {
-                    mainTemplate = mainTemplate.Replace("$errorCodec", errorCodecTemplate);
-                    handlerTemplate =
-         @$"if response, responseError := {nameCamelCase}(); responseError == nil {{
-            if responseEncoded, err := responseCodec.BinaryFromNative(nil, response); err == nil {{
-                msg.Respond(responseEncoded)
-            }} else {{
-                msg.Term()
-            }}
-        }} else {{
-            if errorEncoded, err := errorCodec.BinaryFromNative(nil, responseError); err == nil {{
-                msg.Respond(errorEncoded)
-            }} else {{
-                msg.Term()
-            }}
-        }}";
-                }
-                else
-                {
-                    mainTemplate = mainTemplate.Replace("$errorCodec", "");
-                    handlerTemplate =
-         @$"response := {nameCamelCase}()
-        if responseEncoded, err := responseCodec.BinaryFromNative(nil, response); err == nil {{
-            msg.Respond(responseEncoded)
-        }} else {{
-            msg.Term()
-        }}";
-                }
-                mainTemplate = mainTemplate.Replace("$handler", handlerTemplate);
-            }
-            else
-            {
-                mainTemplate =
-@$"func ListenTo{namePascalCase}(conn *nats.Conn, {nameCamelCase} {namePascalCase}) {{
-    {mainTemplate}
-}}";
-                mainTemplate = mainTemplate.Replace("$requestCodec", "");
-                mainTemplate = mainTemplate.Replace("$responseCodec", "");
-                if (error != null)
-                {
-                    mainTemplate = mainTemplate.Replace("$errorCodec", "");
-                    handlerTemplate =
-         @$"if error := {nameCamelCase}(); error == nil {{
-            msg.Ack()
-        }} else {{
-            msg.Term()
-        }}";
-                }
-                else
-                {
-                    mainTemplate = mainTemplate.Replace("$errorCodec", "");
-                    handlerTemplate =
-         @$"{nameCamelCase}()
-            msg.Ack()";
-                }
-                mainTemplate = mainTemplate.Replace("$handler", handlerTemplate);
-            }
-        }
-        return mainTemplate;
-    }
-    public string GetNamespace(string @namespace)
-    {
-        return $"package {@namespace}";
+        protocols.Add($"package {protocol}");
     }
 
-    public string GetRecord(string name, string[] fields, object? options)
+    public string GetRecord(string name, AvroElement[] fields, object? options)
     {
-        StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.AppendLine($"type {toPascalCase(name)} struct {{");
-        foreach (var i in fields)
+        if (types.Add(name))
         {
-            stringBuilder.AppendLine($"    {i}");
+            StringBuilder stringBuilder = new StringBuilder();
+            StringBuilder constructor = new StringBuilder();
+            StringBuilder toMap = new StringBuilder();
+            string namePascalCase = name.ToPascalCase();
+            string nameCamelCase = name.ToCamelCase();
+            stringBuilder.AppendLine($"type {namePascalCase} struct {{");
+            string constructorFunction = @$"func new{namePascalCase}(value map[string]any) {namePascalCase} {{
+                {nameCamelCase} := {namePascalCase} {{}}
+                $next
+                return {nameCamelCase}
+            }}";
+            string toMapFunction = @$"func ({nameCamelCase} {namePascalCase}) ToMap() map[string]any {{
+                _map := make(map[string]any)
+                $next
+                return _map
+            }}";
+            foreach (var i in fields)
+            {
+                stringBuilder.AppendLine($"    {i.Template()}");
+                if (i is AvroField avroField)
+                {
+                    constructor.AppendLine(new AutoMappers(avroField.AvroType, name, avroField.Name, avroField.SelectedType!, GetType).GetBackwardMapper());
+                    toMap.AppendLine(new AutoMappers(avroField.AvroType, name, avroField.Name, avroField.SelectedType!, GetType).GetForwardMapper());
+                }
+                else if (i is AvroArray avroArray)
+                {
+                    constructor.AppendLine(new AutoMappers(name, avroArray.Name, avroArray.TypeNames![0], avroArray.ElementGenericType!, avroArray.Dimensions, GetType).GetBackwardMapper());
+                    toMap.AppendLine(new AutoMappers(name, avroArray.Name, avroArray.TypeNames![0], avroArray.ElementGenericType!, avroArray.Dimensions, GetType).GetForwardMapper());
+                }
+                else if (i is AvroMap avroMap)
+                {
+                    constructor.AppendLine(new AutoMappers(AvroTypes.MAP, name, avroMap.Name, null!, GetType).GetBackwardMapper());
+                    toMap.AppendLine(new AutoMappers(AvroTypes.MAP, name, avroMap.Name, null!, GetType).GetForwardMapper());
+                }
+            }
+            stringBuilder.AppendLine("}");
+            stringBuilder.AppendLine(constructorFunction.Replace("$next", constructor.ToString()));
+            stringBuilder.AppendLine(toMapFunction.Replace("$next", toMap.ToString()));
+            return stringBuilder.ToString();
         }
-        stringBuilder.AppendLine("}");
-        return stringBuilder.ToString();
+        return string.Empty;
     }
 
     public string GetType(AvroTypes type)
     {
         switch (type)
         {
-            case AvroTypes.UNION:
-            case AvroTypes.UNION | AvroTypes.NULL:
+            case var t when (t & AvroTypes.UNION) == AvroTypes.UNION:
+            case AvroTypes.NULL:
                 {
                     return "any";
                 }
             case AvroTypes.BOOLEAN:
                 {
-                    return "boolean";
+                    return "bool";
                 }
             case AvroTypes.BOOLEAN | AvroTypes.NULL:
                 {
-                    return "*boolean";
+                    return "*bool";
                 }
             case AvroTypes.BYTES:
                 {
@@ -406,19 +342,19 @@ $@"errorCodec, errorCodecError := {errorPascalCase}.Codec({errorPascalCase} {{}}
                 }
             case AvroTypes.DOUBLE:
                 {
-                    return "double";
+                    return "float64";
                 }
             case AvroTypes.DOUBLE | AvroTypes.NULL:
                 {
-                    return "*double";
+                    return "*float64";
                 }
             case AvroTypes.FLOAT:
                 {
-                    return "float";
+                    return "float32";
                 }
             case AvroTypes.FLOAT | AvroTypes.NULL:
                 {
-                    return "*float";
+                    return "*float32";
                 }
             case AvroTypes.INT:
                 {
@@ -442,11 +378,15 @@ $@"errorCodec, errorCodecError := {errorPascalCase}.Codec({errorPascalCase} {{}}
                 }
             case AvroTypes.LONG | AvroTypes.NULL:
                 {
-                    return "*long";
+                    return "*int64";
                 }
             case AvroTypes.TIMESTAMP:
                 {
-                    return "time";
+                    return "time.Time";
+                }
+            case AvroTypes.TIMESTAMP | AvroTypes.NULL:
+                {
+                    return "*time.Time";
                 }
         }
         throw new ArgumentException();
@@ -463,12 +403,15 @@ $@"errorCodec, errorCodecError := {errorPascalCase}.Codec({errorPascalCase} {{}}
             return "";
         }
     }
-    private string toPascalCase(string name)
+
+    public string GetNamespace()
     {
-        return char.ToUpper(name[0]) + name.Substring(1, name.Length - 1);
+        return string.Join("\r\n", protocols);
     }
-    private string toCamelCase(string name)
+
+    public string GetCodec()
     {
-        return char.ToLower(name[0]) + name.Substring(1, name.Length - 1);
+        return string.Join("\r\n", codecs);
     }
+
 }

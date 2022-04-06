@@ -1,6 +1,10 @@
+using System.Text.Json.Serialization;
+
 namespace AvroCompiler.Core.Schema;
 public class Request
 {
-    public string? name { get; set; }
-    public string? type { get; set; }
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
+     [JsonPropertyName("type")]
+    public string? Type { get; set; }
 }
