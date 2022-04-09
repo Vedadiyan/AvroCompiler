@@ -243,10 +243,10 @@ public class GoLanguageFeatures : ILanguageFeature
             if (!Enum.TryParse<AvroTypes>(type.ToUpper(), out AvroTypes avroType))
             {
                 object? error = _options?.FirstOrDefault(x => x.Name == "Error")?.GetValue(options);
-                NatsClientCreator natsClientCreator = new NatsClientCreator(name, "", type, response, error != null ? (string)error : null);
+                NatsListenerCreator natsListenerCrerator = new NatsListenerCreator(name, "", type, response, error != null ? (string)error : null);
                 output.AppendLine();
-                output.AppendLine(natsClientCreator.GetFunctionType());
-                output.Append(natsClientCreator.GetFunction());
+                output.AppendLine(natsListenerCrerator.GetFunctionType());
+                output.Append(natsListenerCrerator.GetFunction());
             }
             return output.ToString();
         }
@@ -259,10 +259,10 @@ public class GoLanguageFeatures : ILanguageFeature
                 return "";
             }
             object? error = _options?.FirstOrDefault(x => x.Name == "Error")?.GetValue(options);
-            NatsClientCreator natsClientCreator = new NatsClientCreator(name, "", null, response, error != null ? (string)error : null);
+            NatsListenerCreator natsListenerCreator = new NatsListenerCreator(name, "", null, response, error != null ? (string)error : null);
             output.AppendLine();
-            output.AppendLine(natsClientCreator.GetFunctionType());
-            output.AppendLine(natsClientCreator.GetFunction());
+            output.AppendLine(natsListenerCreator.GetFunctionType());
+            output.AppendLine(natsListenerCreator.GetFunction());
             return output.ToString();
         }
         return "";

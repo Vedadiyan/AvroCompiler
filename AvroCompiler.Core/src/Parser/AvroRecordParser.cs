@@ -59,6 +59,7 @@ public class AvroRecordParser : IAvroParser<IEnumerable<AvroElement>>
                     string typeName = ShouldOr(innerTypes.TypeName, new ArgumentNullException());
                     if (typeName == "record")
                     {
+                        string sss = innerType.ToString();
                         languageFeature.RegisterCodec(ShouldOr(innerTypes.Name, new ArgumentNullException()), ShouldOr(innerType.GetRawText(), new ArgumentNullException()), null);
                     }
                     AvroRecordParser innerParser = new AvroRecordParser(ShouldOr(innerTypes, new ArgumentNullException()), languageFeature);
@@ -72,6 +73,7 @@ public class AvroRecordParser : IAvroParser<IEnumerable<AvroElement>>
             }
             if (type.RawObject.ValueKind != JsonValueKind.Undefined)
             {
+                string sss = type.RawObject.ToString();
                 languageFeature.RegisterCodec(ShouldOr(type.Name, new ArgumentNullException()), type.RawObject.GetRawText(), null);
             }
             Types.Current.Value.RegisterType(ShouldOr(type.Name, new ArgumentNullException()), HighOrderType.RECORD);

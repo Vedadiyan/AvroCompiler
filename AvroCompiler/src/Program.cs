@@ -13,8 +13,8 @@ public class Program
     {
         try
         {
-            AvroCompilerContext avroCompilerContext = new AvroCompilerContext("token.avdl", new GoLanguageFeatures());
-            await avroCompilerContext.Compile(@"C:\Users\Pouya\Desktop\Playground\gonatstest\TestProtocol", "Test.go");
+            AvroCompilerContext avroCompilerContext = new AvroCompilerContext("nounce.avdl", new GoLanguageFeatures());
+            await avroCompilerContext.Compile(@"C:\Users\Pouya\Desktop\Playground\Booqall.Protocols\go\", "nounce.go");
         }
         catch(AvroCompilationException exception) {
             Console.WriteLine("{0}\r\n{1}", exception.Message, exception.Data["Error"]);

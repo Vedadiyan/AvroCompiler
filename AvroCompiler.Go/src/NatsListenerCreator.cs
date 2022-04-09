@@ -76,7 +76,7 @@ if requestDecoded, _, requestDecodingError := requestCodec.NativeFromBinary(msg.
 }}";
         public static readonly string ResponseHandler =
 @$"
-if responseEncoded, responseEncodingError := responseCodec.BinaryFromNative(nil, response); responseEncodingError == nil {{
+if responseEncoded, responseEncodingError := responseCodec.BinaryFromNative(nil, *response); responseEncodingError == nil {{
     msg.Respond(responseEncoded)
 }} else {{
     {PlaceHolders.Error}
@@ -84,7 +84,7 @@ if responseEncoded, responseEncodingError := responseCodec.BinaryFromNative(nil,
 ";
         public static readonly string ErrorHandler =
 @$"
-if errorEncoded, errorEncodingError := errorCodec.BinaryFromNative(nil, err); errorEncodingError == nil {{
+if errorEncoded, errorEncodingError := errorCodec.BinaryFromNative(nil, *err); errorEncodingError == nil {{
     msg.Respond(errorEncoded)
 }} else {{
     {PlaceHolders.Error}
@@ -240,15 +240,15 @@ if err := {PlaceHolders.FunctionNameCamelCase}(); err != nil {{
         {
             if ((functionType & FunctionTypes.REQUEST) == FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) == FunctionTypes.RESPONSE)
             {
-                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} {request!.ToPascalCase()}) {response!.ToPascalCase()}";
+                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} {request!.ToPascalCase()}) *{response!.ToPascalCase()}";
             }
             else if ((functionType & FunctionTypes.REQUEST) != FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) == FunctionTypes.RESPONSE)
             {
-                return @$"type {functionName.ToPascalCase()} func() {response!.ToPascalCase()}";
+                return @$"type {functionName.ToPascalCase()} func() *{response!.ToPascalCase()}";
             }
             else if ((functionType & FunctionTypes.REQUEST) == FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) != FunctionTypes.RESPONSE)
             {
-                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} {request!.ToPascalCase()})";
+                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} *{request!.ToPascalCase()})";
             }
             else if ((functionType & FunctionTypes.REQUEST) != FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) != FunctionTypes.RESPONSE)
             {
@@ -263,19 +263,19 @@ if err := {PlaceHolders.FunctionNameCamelCase}(); err != nil {{
         {
             if ((functionType & FunctionTypes.REQUEST) == FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) == FunctionTypes.RESPONSE)
             {
-                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} {request!.ToPascalCase()}) {response!.ToPascalCase()}, {error!.ToPascalCase()})";
+                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} {request!.ToPascalCase()}) (*{response!.ToPascalCase()}, *{error!.ToPascalCase()})";
             }
             else if ((functionType & FunctionTypes.REQUEST) != FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) == FunctionTypes.RESPONSE)
             {
-                return @$"type {functionName.ToPascalCase()} func() ({response!.ToPascalCase()}, {error!.ToPascalCase()})";
+                return @$"type {functionName.ToPascalCase()} func() ({response!.ToPascalCase()}, *{error!.ToPascalCase()})";
             }
             else if ((functionType & FunctionTypes.REQUEST) == FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) != FunctionTypes.RESPONSE)
             {
-                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} {request!.ToPascalCase()}) ({error!.ToPascalCase()})";
+                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} {request!.ToPascalCase()}) *({error!.ToPascalCase()})";
             }
             else if ((functionType & FunctionTypes.REQUEST) != FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) != FunctionTypes.RESPONSE)
             {
-                return @$"type {functionName.ToPascalCase()} func() ({error!.ToPascalCase()}";
+                return @$"type {functionName.ToPascalCase()} func() (*{error!.ToPascalCase()}";
             }
             else
             {
