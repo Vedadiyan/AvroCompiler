@@ -9,6 +9,8 @@ public class Message
     public string? Response { get; set; }
     [JsonPropertyName("errors")]
     public List<string>? Errors { get; set; }
+    [JsonPropertyName("nats")]
+    public Dictionary<string, string>? Nats { get; set; }
     [JsonPropertyName("one-way")]
     public bool OneWay { get; set; }
 }

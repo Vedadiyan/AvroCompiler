@@ -63,6 +63,7 @@ public class AvroAvprParser : IAvroParser<IEnumerable<AvroElement>>
                         MustNeverBeNull(message.Value.Request).ToDictionary(x => MustNeverBeNull(x.Name), x => MustNeverBeNull(x.Type)),
                         MustNeverBeNull(message.Value.Response),
                         MayBeSafelyNull(message.Value.Errors)?.FirstOrDefault(),
+                        MustNeverBeNull(message.Value.Nats),
                         languageFeature
                     );
                 }

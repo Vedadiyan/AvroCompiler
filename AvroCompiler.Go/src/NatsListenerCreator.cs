@@ -60,7 +60,7 @@ if responseCodecError != nil {{
 @$"
 errorCodec, errorCodecError := {PlaceHolders.ErrorNamePascalCase}.Codec({PlaceHolders.ErrorNamePascalCase}{{}})
 if errorCodecError != nil {{
-    panic(errorCodec)
+    panic(errorCodecError)
 }}
 ";
         public static readonly string RequestHandler =
@@ -232,6 +232,7 @@ if err := {PlaceHolders.FunctionNameCamelCase}(); err != nil {{
         template = template.Replace(PlaceHolders.FunctionNameCamelCase, functionName.ToCamelCase());
         template = template.Replace(PlaceHolders.FunctionNamePascalCase, functionName.ToPascalCase());
         template = template.Replace(PlaceHolders.Error, "msg.Term()");
+        template = template.Replace(PlaceHolders.Namespace, @namespace);
         return template;
     }
     public string GetFunctionType()
