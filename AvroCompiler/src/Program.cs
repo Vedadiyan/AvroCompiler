@@ -15,8 +15,8 @@ public class Program
         {
             AvroCompilerContext avroCompilerServerContext = new AvroCompilerContext("nounce.avdl", new GoLanguageFeaturesServer());
             await avroCompilerServerContext.Compile(@"C:\Users\Pouya\Desktop\Playground\Booqall.Protocols\go\", "nouncesrv.go");
-            AvroCompilerContext avroCompilerClientContext = new AvroCompilerContext("nounce.avdl", new GoLanguageFeaturesClient());
-            await avroCompilerServerContext.Compile(@"C:\Users\Pouya\Desktop\Playground\Booqall.Protocols\go\", "nounceclient.go");
+            // AvroCompilerContext avroCompilerClientContext = new AvroCompilerContext("nounce.avdl", new GoLanguageFeaturesClient());
+            // await avroCompilerClientContext.Compile(@"C:\Users\Pouya\Desktop\Playground\Booqall.Protocols\go\", "nounceclient.go");
         }
         catch (AvroCompilationException exception)
         {

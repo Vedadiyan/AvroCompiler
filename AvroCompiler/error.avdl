@@ -4,6 +4,7 @@ protocol Error {
         INTERNAL_ERROR
     }
     record ErrorRes {
+        int status;
         ErrorCodes errorCode;
         string reason;
     }

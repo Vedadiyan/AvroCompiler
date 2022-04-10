@@ -78,7 +78,12 @@ if requestDecoded, _, requestDecodingError := requestCodec.NativeFromBinary(msg.
         public static readonly string ResponseHandler =
 @$"
 if responseEncoded, responseEncodingError := responseCodec.BinaryFromNative(nil, response.ToMap()); responseEncodingError == nil {{
-    msg.Respond(responseEncoded)
+    headers := nats.Header{{}}
+    headers.Add(""Status"", ""200"")
+    msg.RespondMsg(&nats.Msg{{
+        Data:   responseEncoded,
+        Header: headers,
+    }})
 }} else {{
     {PlaceHolders.Error}
 }}
@@ -86,7 +91,12 @@ if responseEncoded, responseEncodingError := responseCodec.BinaryFromNative(nil,
         public static readonly string ErrorHandler =
 @$"
 if errorEncoded, errorEncodingError := errorCodec.BinaryFromNative(nil, err.ToMap()); errorEncodingError == nil {{
-    msg.Respond(errorEncoded)
+    headers := nats.Header{{}}
+    headers.Add(""Status"", ""500"")
+    msg.RespondMsg(&nats.Msg{{
+        Data:   errorEncoded,
+        Header: headers,
+    }})
 }} else {{
     {PlaceHolders.Error}
 }}

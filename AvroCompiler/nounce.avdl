@@ -9,6 +9,7 @@ protocol Nounce {
         string username;
     }
     record GenerateRes {
+        int status;
         string nounce;
     }
     record RetrieveReq {
@@ -16,6 +17,7 @@ protocol Nounce {
         string username;
     }
     record RetrieveRes {
+        int status;
         string nounce;
     }
     @nats({
