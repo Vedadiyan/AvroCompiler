@@ -1,0 +1,10 @@
+@version("1.0.0")
+protocol Error {
+    enum ErrorCodes {
+        INTERNAL_ERROR
+    }
+    record ErrorRes {
+        ErrorCodes errorCode;
+        string reason;
+    }
+}

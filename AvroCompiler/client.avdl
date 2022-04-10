@@ -1,0 +1,6 @@
+@version("1.0.0")
+protocol Client {
+    record ClientInfo {
+	    string clientId;
+    }
+}

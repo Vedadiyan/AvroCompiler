@@ -244,10 +244,10 @@ public class GoLanguageFeatures : ILanguageFeature
             {
                 object? error = _options?.FirstOrDefault(x => x.Name == "Error")?.GetValue(options);
                 object? @namespace = _options?.FirstOrDefault(x=> x.Name == "Namespace").GetValue(options);
-                NatsListenerCreator natsListenerCrerator = new NatsListenerCreator(name, (string)@namespace, type, response, error != null ? (string)error : null);
+                NatsClientCreator natsClientCreator = new NatsClientCreator(name, (string)@namespace, type, response, error != null ? (string)error : null);
                 output.AppendLine();
-                output.AppendLine(natsListenerCrerator.GetFunctionType());
-                output.Append(natsListenerCrerator.GetFunction());
+                output.AppendLine(natsClientCreator.GetFunctionType());
+                output.Append(natsClientCreator.GetFunction());
             }
             return output.ToString();
         }
@@ -261,10 +261,10 @@ public class GoLanguageFeatures : ILanguageFeature
             }
             object? error = _options?.FirstOrDefault(x => x.Name == "Error")?.GetValue(options);
             object? @namespace = _options?.FirstOrDefault(x=> x.Name == "Namespace").GetValue(options);
-            NatsListenerCreator natsListenerCreator = new NatsListenerCreator(name, (string)@namespace, null, response, error != null ? (string)error : null);
+            NatsClientCreator natsClientCreator = new NatsClientCreator(name, (string)@namespace, null, response, error != null ? (string)error : null);
             output.AppendLine();
-            output.AppendLine(natsListenerCreator.GetFunctionType());
-            output.AppendLine(natsListenerCreator.GetFunction());
+            output.AppendLine(natsClientCreator.GetFunctionType());
+            output.AppendLine(natsClientCreator.GetFunction());
             return output.ToString();
         }
         return "";

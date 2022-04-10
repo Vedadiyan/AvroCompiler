@@ -1,0 +1,29 @@
+@version("1.0.0")
+protocol Nounce {
+
+    import idl "client.avdl";
+    import idl "error.avdl";
+
+    record GenerateReq {
+        ClientInfo client;
+        string username;
+    }
+    record GenerateRes {
+        string nounce;
+    }
+    record RetrieveReq {
+        ClientInfo client;
+        string username;
+    }
+    record RetrieveRes {
+        string nounce;
+    }
+    @nats({
+        "namespace": "internal.nounce.generate"
+    })
+    GenerateRes Generate(GenerateReq generateReq) throws ErrorRes;
+        @nats({
+        "namespace": "internal.nounce.retrieve"
+    })
+    RetrieveRes Retrieve(RetrieveReq retrieveReq) throws ErrorRes;
+}

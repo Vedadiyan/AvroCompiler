@@ -66,7 +66,8 @@ if errorCodecError != nil {{
         public static readonly string RequestHandler =
 @$"
 if requestDecoded, _, requestDecodingError := requestCodec.NativeFromBinary(msg.Data); requestDecodingError == nil {{
-    if request, ok := requestDecoded.({PlaceHolders.RequestNamePascalCase}); ok {{
+    if request, ok := requestDecoded.(map[string]any); ok {{
+        request := new{PlaceHolders.RequestNamePascalCase}(request)
 {PlaceHolders.Next}
     }} else {{
         {PlaceHolders.Error}
@@ -76,7 +77,7 @@ if requestDecoded, _, requestDecodingError := requestCodec.NativeFromBinary(msg.
 }}";
         public static readonly string ResponseHandler =
 @$"
-if responseEncoded, responseEncodingError := responseCodec.BinaryFromNative(nil, *response); responseEncodingError == nil {{
+if responseEncoded, responseEncodingError := responseCodec.BinaryFromNative(nil, response.ToMap()); responseEncodingError == nil {{
     msg.Respond(responseEncoded)
 }} else {{
     {PlaceHolders.Error}
@@ -84,7 +85,7 @@ if responseEncoded, responseEncodingError := responseCodec.BinaryFromNative(nil,
 ";
         public static readonly string ErrorHandler =
 @$"
-if errorEncoded, errorEncodingError := errorCodec.BinaryFromNative(nil, *err); errorEncodingError == nil {{
+if errorEncoded, errorEncodingError := errorCodec.BinaryFromNative(nil, err.ToMap()); errorEncodingError == nil {{
     msg.Respond(errorEncoded)
 }} else {{
     {PlaceHolders.Error}
