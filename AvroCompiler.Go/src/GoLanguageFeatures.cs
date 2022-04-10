@@ -243,7 +243,7 @@ public class GoLanguageFeatures : ILanguageFeature
             if (!Enum.TryParse<AvroTypes>(type.ToUpper(), out AvroTypes avroType))
             {
                 object? error = _options?.FirstOrDefault(x => x.Name == "Error")?.GetValue(options);
-                object? @namespace = _options?.FirstOrDefault(x=> x.Name == "Namespace").GetValue(options);
+                object @namespace = _options?.FirstOrDefault(x => x.Name == "Namespace")?.GetValue(options) ?? throw new ArgumentNullException(); ;
                 NatsClientCreator natsClientCreator = new NatsClientCreator(name, (string)@namespace, type, response, error != null ? (string)error : null);
                 output.AppendLine();
                 output.AppendLine(natsClientCreator.GetFunctionType());
@@ -260,7 +260,7 @@ public class GoLanguageFeatures : ILanguageFeature
                 return "";
             }
             object? error = _options?.FirstOrDefault(x => x.Name == "Error")?.GetValue(options);
-            object? @namespace = _options?.FirstOrDefault(x=> x.Name == "Namespace").GetValue(options);
+            object @namespace = _options?.FirstOrDefault(x => x.Name == "Namespace")?.GetValue(options) ?? throw new ArgumentNullException();
             NatsClientCreator natsClientCreator = new NatsClientCreator(name, (string)@namespace, null, response, error != null ? (string)error : null);
             output.AppendLine();
             output.AppendLine(natsClientCreator.GetFunctionType());
