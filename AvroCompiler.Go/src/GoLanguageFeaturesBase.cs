@@ -7,13 +7,13 @@ using AvroCompiler.Core.Specifications;
 
 namespace AvroCompiler.Go;
 
-public class GoLanguageFeatures : ILanguageFeature
+public abstract class GoLanguageFeaturesBase : ILanguageFeature
 {
     private HashSet<string> types;
     private HashSet<string> codecList;
     private HashSet<string> codecs;
     private HashSet<string> protocols;
-    public GoLanguageFeatures()
+    public GoLanguageFeaturesBase()
     {
         types = new HashSet<string>();
         codecList = new HashSet<string>();
@@ -229,46 +229,7 @@ public class GoLanguageFeatures : ILanguageFeature
         }
         return $"{name.ToPascalCase()} map[{elementType}]any";
     }
-    public string GetMessage(string name, IReadOnlyDictionary<string, string> request, string response, object? options)
-    {
-        if (request.Count == 1)
-        {
-            PropertyInfo[]? _options = options?.GetType().GetProperties();
-            StringBuilder output = new StringBuilder();
-            if (response != "null" && Enum.TryParse<AvroTypes>(response.ToUpper(), out AvroTypes responseType))
-            {
-                return "";
-            }
-            string type = request[request.Keys.FirstOrDefault()!];
-            if (!Enum.TryParse<AvroTypes>(type.ToUpper(), out AvroTypes avroType))
-            {
-                object? error = _options?.FirstOrDefault(x => x.Name == "Error")?.GetValue(options);
-                object @namespace = _options?.FirstOrDefault(x => x.Name == "Namespace")?.GetValue(options) ?? throw new ArgumentNullException(); ;
-                NatsClientCreator natsClientCreator = new NatsClientCreator(name, (string)@namespace, type, response, error != null ? (string)error : null);
-                output.AppendLine();
-                output.AppendLine(natsClientCreator.GetFunctionType());
-                output.Append(natsClientCreator.GetFunction());
-            }
-            return output.ToString();
-        }
-        else if (request.Count == 0)
-        {
-            PropertyInfo[]? _options = options?.GetType().GetProperties();
-            StringBuilder output = new StringBuilder();
-            if (response != "null" && Enum.TryParse<AvroTypes>(response.ToUpper(), out AvroTypes responseType))
-            {
-                return "";
-            }
-            object? error = _options?.FirstOrDefault(x => x.Name == "Error")?.GetValue(options);
-            object @namespace = _options?.FirstOrDefault(x => x.Name == "Namespace")?.GetValue(options) ?? throw new ArgumentNullException();
-            NatsClientCreator natsClientCreator = new NatsClientCreator(name, (string)@namespace, null, response, error != null ? (string)error : null);
-            output.AppendLine();
-            output.AppendLine(natsClientCreator.GetFunctionType());
-            output.AppendLine(natsClientCreator.GetFunction());
-            return output.ToString();
-        }
-        return "";
-    }
+    public abstract string GetMessage(string name, IReadOnlyDictionary<string, string> request, string response, object? options);
     public void RegisterProtocol(string protocol)
     {
         protocols.Add($"package {protocol}");

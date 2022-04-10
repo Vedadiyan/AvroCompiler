@@ -13,10 +13,13 @@ public class Program
     {
         try
         {
-            AvroCompilerContext avroCompilerContext = new AvroCompilerContext("nounce.avdl", new GoLanguageFeatures());
-            await avroCompilerContext.Compile(@"C:\Users\Pouya\Desktop\Playground\Booqall.Protocols\go\", "nounce.go");
+            AvroCompilerContext avroCompilerServerContext = new AvroCompilerContext("nounce.avdl", new GoLanguageFeaturesServer());
+            await avroCompilerServerContext.Compile(@"C:\Users\Pouya\Desktop\Playground\Booqall.Protocols\go\", "nouncesrv.go");
+            AvroCompilerContext avroCompilerClientContext = new AvroCompilerContext("nounce.avdl", new GoLanguageFeaturesClient());
+            await avroCompilerServerContext.Compile(@"C:\Users\Pouya\Desktop\Playground\Booqall.Protocols\go\", "nounceclient.go");
         }
-        catch(AvroCompilationException exception) {
+        catch (AvroCompilationException exception)
+        {
             Console.WriteLine("{0}\r\n{1}", exception.Message, exception.Data["Error"]);
         }
     }
