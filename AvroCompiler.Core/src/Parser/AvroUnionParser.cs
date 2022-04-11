@@ -25,7 +25,7 @@ public class AvroUnionParser : IAvroParser<IEnumerable<AvroElement>>
         {
             if (IsUnionType(typeDefinition))
             {
-                yield return new AvroField(name, ShouldOr(typeDefinition.Deserialize<string[]>(), new ArgumentNullException()), languageFeature);
+                yield return new AvroField(name, ShouldOr(typeDefinition.Deserialize<string[]>(), new ArgumentNullException()), field.Validations, languageFeature);
             }
         }
         else
@@ -145,12 +145,12 @@ public class AvroUnionParser : IAvroParser<IEnumerable<AvroElement>>
                     }
                     else
                     {
-                        yield return new AvroField(name, types.ToArray(), languageFeature);
+                        yield return new AvroField(name, types.ToArray(), field.Validations , languageFeature);
                     }
                 }
                 else
                 {
-                    yield return new AvroField(name, types.ToArray(), languageFeature);
+                    yield return new AvroField(name, types.ToArray(), field.Validations, languageFeature);
                 }
             }
         }

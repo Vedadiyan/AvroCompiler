@@ -67,7 +67,7 @@ public class AvroRecordParser : IAvroParser<IEnumerable<AvroElement>>
                     {
                         yield return item;
                     }
-                    avroElements.Add(name, new AvroField(name, new string[] { ShouldOr(innerTypes.Name, new ArgumentNullException()) }, languageFeature));
+                    avroElements.Add(name, new AvroField(name, new string[] { ShouldOr(innerTypes.Name, new ArgumentNullException()) }, field.Validations, languageFeature));
                 }
 
             }

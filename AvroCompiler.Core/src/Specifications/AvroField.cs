@@ -10,7 +10,8 @@ public class AvroField : AvroElement
 {
     public AvroTypes AvroType { get; }
     public string? SelectedType { get; private set; }
-    public AvroField(string name, string[] typeNames, ILanguageFeature languageFeature) : base(name, typeNames, languageFeature)
+    public List<string>? Validations { get; }
+    public AvroField(string name, string[] typeNames, List<string>? validations, ILanguageFeature languageFeature) : base(name, typeNames, languageFeature)
     {
         foreach (var typeName in typeNames)
         {
@@ -37,6 +38,7 @@ public class AvroField : AvroElement
                 AvroType = AvroType.AddFlag(AvroTypes.NULL);
             }
         }
+        Validations = validations;
     }
 
     public override string Template()
@@ -47,12 +49,12 @@ public class AvroField : AvroElement
             if (typeNames.Length == 1)
             {
                 SelectedType = typeNames[0];
-                return LanguageFeature.GetField(SelectedType, AvroType, Name, new { JsonPropertyName = Name });
+                return LanguageFeature.GetField(SelectedType, AvroType, Name, new { JsonPropertyName = Name, Validations = Validations });
             }
             else if (typeNames.Length == 2)
             {
                 SelectedType = ShouldOr(typeNames.FirstOrDefault(x => x != "null"), new AvroTypeException(Name));
-                return LanguageFeature.GetField(SelectedType, AvroType, Name, new { JsonPropertyName = Name });
+                return LanguageFeature.GetField(SelectedType, AvroType, Name, new { JsonPropertyName = Name, Validations = Validations });
             }
             else
             {
@@ -66,11 +68,11 @@ public class AvroField : AvroElement
             {
                 if (Enum.TryParse<AvroTypes>(typeNames[1].ToUpper(), out AvroTypes type))
                 {
-                    return LanguageFeature.GetMap(type, Name, new { JsonPropertyName = Name });
+                    return LanguageFeature.GetMap(type, Name, new { JsonPropertyName = Name, Validations = Validations });
                 }
                 else
                 {
-                    return LanguageFeature.GetMap(typeNames[1], Name, new { JsonPropertyName = Name });
+                    return LanguageFeature.GetMap(typeNames[1], Name, new { JsonPropertyName = Name, Validations = Validations });
                 }
             }
             else
@@ -80,7 +82,7 @@ public class AvroField : AvroElement
         }
         else
         {
-            return LanguageFeature.GetField(AvroType, Name, new { JsonPropertyName = Name, Types = TypeNames });
+            return LanguageFeature.GetField(AvroType, Name, new { JsonPropertyName = Name, Types = TypeNames, Validations = Validations });
         }
     }
 }
