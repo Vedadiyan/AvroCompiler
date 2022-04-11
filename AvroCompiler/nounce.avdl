@@ -7,7 +7,7 @@ protocol Nounce {
     record GenerateReq {
         ClientInfo client;
         @validations(["required"]) 
-        map<string> username;
+        string username;
     }
     record GenerateRes {
         int status;
