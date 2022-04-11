@@ -7,7 +7,8 @@ namespace AvroCompiler.Core.Specifications;
 public class AvroMap : AvroElement
 {
     public AvroTypes ElementType { get; }
-    public AvroMap(string name, string elementType, ILanguageFeature languageFeature) : base(name, new string[] { elementType }, languageFeature)
+    public List<string>? Validations { get; }
+    public AvroMap(string name, string elementType, List<string>? validations, ILanguageFeature languageFeature) : base(name, new string[] { elementType }, languageFeature)
     {
         if (Enum.TryParse<AvroTypes>(elementType.ToUpper(), out AvroTypes type))
         {
@@ -17,13 +18,14 @@ public class AvroMap : AvroElement
         {
             ElementType = AvroTypes.REFERENCE;
         }
+        Validations = validations;
     }
 
     public override string Template()
     {
         if (ElementType != AvroTypes.REFERENCE)
         {
-            return LanguageFeature.GetMap(ElementType, Name, new { JsonPropertyName = Name });
+            return LanguageFeature.GetMap(ElementType, Name, new { JsonPropertyName = Name, Validations = Validations });
         }
         else
         {

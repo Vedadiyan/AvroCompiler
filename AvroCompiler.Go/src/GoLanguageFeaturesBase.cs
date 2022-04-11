@@ -53,11 +53,11 @@ public abstract class GoLanguageFeaturesBase : ILanguageFeature
                 string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
                 if (elementType != AvroTypes.MAP)
                 {
-                    return @$"{name.ToPascalCase()} {dimensionBuilder.ToString()}{GetType(elementType)} `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""` {parseValidations(properties, options)}";
+                    return @$"{name.ToPascalCase()} {dimensionBuilder.ToString()}{GetType(elementType)} `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}"" {parseValidations(properties, options)}`";
                 }
                 else
                 {
-                    return @$"{name.ToPascalCase()} {dimensionBuilder.ToString()}map[{elementGenericType}]any `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""` {parseValidations(properties, options)}";
+                    return @$"{name.ToPascalCase()} {dimensionBuilder.ToString()}map[{elementGenericType}]any `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}"" {parseValidations(properties, options)}`";
                 }
             }
         }
@@ -84,7 +84,7 @@ public abstract class GoLanguageFeaturesBase : ILanguageFeature
             if (jsonPropertyNameProperty != null)
             {
                 string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
-                return @$"{name.ToPascalCase()} {dimensionBuilder.ToString()}{elementType} `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""` {parseValidations(properties, options)}";
+                return @$"{name.ToPascalCase()} {dimensionBuilder.ToString()}{elementType} `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""`{parseValidations(properties, options)}`";
             }
         }
         return $"{name.ToPascalCase()} {dimensionBuilder.ToString()}{elementType}";

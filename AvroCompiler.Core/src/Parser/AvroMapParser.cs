@@ -24,9 +24,10 @@ public class AvroMapParser : IAvroParser<IEnumerable<AvroElement>>
         {
             if (IsMap(typeDefinition))
             {
+                Schema.Type _type = type.Deserialize<Schema.Type>()!;
                 if (type.TryGetProperty("values", out JsonElement values))
                 {
-                    yield return new AvroMap(name, ShouldOr(values.GetString(), new ArgumentNullException()), languageFeature);
+                    yield return new AvroMap(name, ShouldOr(values.GetString(), new ArgumentNullException()), _type.Validations, languageFeature);
                 }
             }
         }
@@ -34,9 +35,10 @@ public class AvroMapParser : IAvroParser<IEnumerable<AvroElement>>
         {
             if (IsMap(type))
             {
+                Schema.Type _type = type.Deserialize<Schema.Type>()!;
                 if (type.TryGetProperty("values", out JsonElement values))
                 {
-                    yield return new AvroMap(name, ShouldOr(values.GetString(), new ArgumentNullException()), languageFeature);
+                    yield return new AvroMap(name, ShouldOr(values.GetString(), new ArgumentNullException()), _type.Validations, languageFeature);
                 }
             }
         }
