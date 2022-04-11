@@ -10,4 +10,7 @@
     <ProjectReference Include="../AvroCompiler.Core/AvroCompiler.Core.csproj"></ProjectReference>
     <ProjectReference Include="../AvroCompiler.Go/AvroCompiler.Go.csproj"></ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="CommandLineParser" Version="2.8.0" />
+  </ItemGroup>
 </Project>

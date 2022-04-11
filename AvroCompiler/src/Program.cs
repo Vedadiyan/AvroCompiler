@@ -1,9 +1,11 @@
 ﻿using System.Diagnostics;
 using AvroCompiler.Core;
+using AvroCompiler.Core.Abstraction;
 using AvroCompiler.Core.AvroAPI;
 using AvroCompiler.Core.Exceptions;
 using AvroCompiler.Core.Parser;
 using AvroCompiler.Go;
+using CommandLine;
 
 namespace AvroCompiler;
 
@@ -11,16 +13,71 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
-        try
+        CommandLine.Parser.Default.ParseArguments<Options>(args).WithParsed(async x =>
         {
-            AvroCompilerContext avroCompilerServerContext = new AvroCompilerContext("nounce.avdl", new GoLanguageFeaturesServer());
-            await avroCompilerServerContext.Compile(@"C:\Users\Pouya\Desktop\Playground\Booqall.Protocols\go\", "nouncesrv.go");
-            // AvroCompilerContext avroCompilerClientContext = new AvroCompilerContext("nounce.avdl", new GoLanguageFeaturesClient());
-            // await avroCompilerClientContext.Compile(@"C:\Users\Pouya\Desktop\Playground\Booqall.Protocols\go\", "nounceclient.go");
-        }
-        catch (AvroCompilationException exception)
-        {
-            Console.WriteLine("{0}\r\n{1}", exception.Message, exception.Data["Error"]);
-        }
+            switch (x.GenerationType!.ToLower())
+            {
+                case "server":
+                    {
+                        ILanguageFeature languageFeature;
+                        switch (x.Language!.ToLower())
+                        {
+                            case "go":
+                                {
+                                    languageFeature = new GoLanguageFeaturesServer();
+                                    break;
+                                }
+                            default:
+                                {
+                                    Console.WriteLine("Unsupported language ({0})", x.Language!);
+                                    return;
+                                }
+                        }
+                        try
+                        {
+                            AvroCompilerContext avroCompilerServerContext = new AvroCompilerContext(x.TargetAvdlFile!, languageFeature);
+                            await avroCompilerServerContext.Compile(x.DestinationPath!, x.OutputFileName!);
+                        }
+                        catch (AvroCompilationException exception)
+                        {
+                            Console.WriteLine("{0}\r\n{1}", exception.Message, exception.Data["Error"]);
+                        }
+                        break;
+                    }
+                case "client":
+                    {
+                        ILanguageFeature languageFeature;
+                        switch (x.Language!.ToLower())
+                        {
+                            case "go":
+                                {
+                                    languageFeature = new GoLanguageFeaturesClient();
+                                    break;
+                                }
+                            default:
+                                {
+                                    Console.WriteLine("Unsupported language ({0})", x.Language!);
+                                    return;
+                                }
+                        }
+                        try
+                        {
+                            AvroCompilerContext avroCompilerClientContext = new AvroCompilerContext(x.TargetAvdlFile!, languageFeature);
+                            await avroCompilerClientContext.Compile(x.DestinationPath!, x.OutputFileName!);
+                        }
+                        catch (AvroCompilationException exception)
+                        {
+                            Console.WriteLine("{0}\r\n{1}", exception.Message, exception.Data["Error"]);
+                        }
+                        break;
+                    }
+                default:
+                    {
+                        Console.WriteLine("Unsupported generation type ({0})", x.GenerationType!);
+                        return;
+                    }
+            }
+        });
+
     }
 }
