@@ -38,7 +38,7 @@ public class AvroEnumParser : IAvroParser<IEnumerable<AvroElement>>
                 {
                     yield return item;
                 }
-                yield return new AvroField(name, new string[] { name }, field.Validations, languageFeature);
+                yield return new AvroField(name, new string[] { name }, this.type?.Validations, languageFeature);
             }
         }
         else if (HasValue(type))

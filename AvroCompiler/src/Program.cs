@@ -13,7 +13,7 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        CommandLine.Parser.Default.ParseArguments<Options>(args).WithParsed(async x =>
+        CommandLine.Parser.Default.ParseArguments<Options>(args).WithParsed(x =>
         {
             switch (x.GenerationType!.ToLower())
             {
@@ -36,7 +36,7 @@ public class Program
                         try
                         {
                             AvroCompilerContext avroCompilerServerContext = new AvroCompilerContext(x.TargetAvdlFile!, languageFeature);
-                            await avroCompilerServerContext.Compile(x.DestinationPath!, x.OutputFileName!);
+                            avroCompilerServerContext.Compile(x.DestinationPath!, x.OutputFileName!).Wait();
                         }
                         catch (AvroCompilationException exception)
                         {
@@ -63,7 +63,7 @@ public class Program
                         try
                         {
                             AvroCompilerContext avroCompilerClientContext = new AvroCompilerContext(x.TargetAvdlFile!, languageFeature);
-                            await avroCompilerClientContext.Compile(x.DestinationPath!, x.OutputFileName!);
+                            avroCompilerClientContext.Compile(x.DestinationPath!, x.OutputFileName!).Wait();
                         }
                         catch (AvroCompilationException exception)
                         {

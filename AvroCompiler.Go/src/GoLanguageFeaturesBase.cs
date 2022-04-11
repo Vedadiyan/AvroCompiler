@@ -156,7 +156,7 @@ public abstract class GoLanguageFeaturesBase : ILanguageFeature
             if (jsonPropertyNameProperty != null)
             {
                 string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
-                return @$"{name.ToPascalCase()} {GetType(type)} `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""` {parseValidations(properties, options)}";
+                return @$"{name.ToPascalCase()} {GetType(type)} `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}"" {parseValidations(properties, options)}`";
             }
         }
         return $"{name.ToPascalCase()} {GetType(type)}";
@@ -171,7 +171,7 @@ public abstract class GoLanguageFeaturesBase : ILanguageFeature
             if (jsonPropertyNameProperty != null)
             {
                 string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
-                return @$"{name.ToPascalCase()} {nullable(actualType)}{type.ToPascalCase()} `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""` {parseValidations(properties, options)}";
+                return @$"{name.ToPascalCase()} {nullable(actualType)}{type.ToPascalCase()} `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}"" {parseValidations(properties, options)}`";
             }
         }
         return $"{name.ToPascalCase()} {nullable(actualType)}{type.ToPascalCase()}";
@@ -210,7 +210,7 @@ public abstract class GoLanguageFeaturesBase : ILanguageFeature
             if (jsonPropertyNameProperty != null)
             {
                 string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
-                return @$"{name.ToPascalCase()} map[{GetType(elementType)}]any `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""` {parseValidations(properties, options)}";
+                return @$"{name.ToPascalCase()} map[{GetType(elementType)}]any `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}"" {parseValidations(properties, options)}`";
             }
         }
         return $"{name.ToPascalCase()} map[{GetType(elementType)}]any";
@@ -224,7 +224,7 @@ public abstract class GoLanguageFeaturesBase : ILanguageFeature
             if (jsonPropertyNameProperty != null)
             {
                 string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
-                return @$"{name.ToPascalCase()} map[{elementType}]any `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""` {parseValidations(properties, options)}";
+                return @$"{name.ToPascalCase()} map[{elementType}]any `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}"" {parseValidations(properties, options)}`";
             }
         }
         return $"{name.ToPascalCase()} map[{elementType}]any";

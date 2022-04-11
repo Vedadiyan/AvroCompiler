@@ -63,11 +63,17 @@ public class AvroRecordParser : IAvroParser<IEnumerable<AvroElement>>
                         languageFeature.RegisterCodec(ShouldOr(innerTypes.Name, new ArgumentNullException()), ShouldOr(innerType.GetRawText(), new ArgumentNullException()), null);
                     }
                     AvroRecordParser innerParser = new AvroRecordParser(ShouldOr(innerTypes, new ArgumentNullException()), languageFeature);
-                    foreach (var item in innerParser.Parse())
+                    if (innerParser.type.RawObject.ValueKind != JsonValueKind.Undefined)
                     {
-                        yield return item;
+                        foreach (var item in innerParser.Parse())
+                        {
+                            yield return item;
+                        }
+                        avroElements.Add(name, new AvroField(name, new string[] { ShouldOr(innerTypes.Name, new ArgumentNullException()) }, null, languageFeature));
                     }
-                    avroElements.Add(name, new AvroField(name, new string[] { ShouldOr(innerTypes.Name, new ArgumentNullException()) }, field.Validations, languageFeature));
+                    else {
+                        avroElements.Add(name, new AvroField(name, new string[] { ShouldOr(innerTypes.TypeName, new ArgumentNullException()) }, innerParser.type.Validations, languageFeature));
+                    }
                 }
 
             }

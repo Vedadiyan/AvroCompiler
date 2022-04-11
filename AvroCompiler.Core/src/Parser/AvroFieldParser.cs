@@ -43,13 +43,13 @@ public class AvroFieldParser : IAvroParser<IEnumerable<AvroElement>>
             if (IsFieldType(type))
             {
                 string typeName = ShouldOr(type.GetString(), new ArgumentException($"Missing type name for field `{name}`"));
-                yield return new AvroField(name, new string[] { typeName }, field.Validations, languageFeature);
+                yield return new AvroField(name, new string[] { typeName }, null, languageFeature);
             }
             else if (type.TryGetProperty("logicalType", out JsonElement logicalType))
             {
                 string? typeName = LogicalTypeNames.GetTypeNameFromLogicalType(ShouldOr(logicalType.GetString(), new ArgumentNullException()));
                 if(HasValue(typeName)){
-                    yield return new AvroField(name, new string[] { MustNeverBeNull(typeName) }, field.Validations, languageFeature);
+                    yield return new AvroField(name, new string[] { MustNeverBeNull(typeName) }, null, languageFeature);
                 }
                 else {
                     throw new Exception("");

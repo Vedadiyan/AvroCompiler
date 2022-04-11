@@ -11,7 +11,18 @@
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/AvroCompiler/bin/Debug/net6.0/AvroCompiler.dll",
-            "args": [],
+            "args": [
+                "-T",
+                "nounce.avdl",
+                "-D", 
+                ".\\",
+                "-O",
+                "test.go",
+                "-G",
+                "client",
+                "-L",
+                "go"
+            ],
             "cwd": "${workspaceFolder}/AvroCompiler",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "internalConsole",

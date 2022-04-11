@@ -28,4 +28,7 @@ public class Type
     public List<Field>? Fields { get; set; }
     [JsonIgnore]
     public JsonElement RawObject { get; set; }
+    [JsonPropertyName("validations")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public List<string>? Validations { get; set; }
 }
