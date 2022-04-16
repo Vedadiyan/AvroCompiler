@@ -60,13 +60,14 @@ if responseCodecError != nil {{
 @$"
 errorCodec, errorCodecError := {PlaceHolders.ErrorNamePascalCase}.Codec({PlaceHolders.ErrorNamePascalCase}{{}})
 if errorCodecError != nil {{
-    panic(errorCodec)
+    panic(errorCodecError)
 }}
 ";
         public static readonly string RequestHandler =
 @$"
 if requestDecoded, _, requestDecodingError := requestCodec.NativeFromBinary(msg.Data); requestDecodingError == nil {{
-    if request, ok := requestDecoded.({PlaceHolders.RequestNamePascalCase}); ok {{
+    if request, ok := requestDecoded.(map[string]any); ok {{
+        request := new{PlaceHolders.RequestNamePascalCase}(request)
 {PlaceHolders.Next}
     }} else {{
         {PlaceHolders.Error}
@@ -76,16 +77,26 @@ if requestDecoded, _, requestDecodingError := requestCodec.NativeFromBinary(msg.
 }}";
         public static readonly string ResponseHandler =
 @$"
-if responseEncoded, responseEncodingError := responseCodec.BinaryFromNative(nil, response); responseEncodingError == nil {{
-    msg.Respond(responseEncoded)
+if responseEncoded, responseEncodingError := responseCodec.BinaryFromNative(nil, response.ToMap()); responseEncodingError == nil {{
+    headers := nats.Header{{}}
+    headers.Add(""Status"", ""200"")
+    msg.RespondMsg(&nats.Msg{{
+        Data:   responseEncoded,
+        Header: headers,
+    }})
 }} else {{
     {PlaceHolders.Error}
 }}
 ";
         public static readonly string ErrorHandler =
 @$"
-if errorEncoded, errorEncodingError := errorCodec.BinaryFromNative(nil, err); errorEncodingError == nil {{
-    msg.Respond(errorEncoded)
+if errorEncoded, errorEncodingError := errorCodec.BinaryFromNative(nil, err.ToMap()); errorEncodingError == nil {{
+    headers := nats.Header{{}}
+    headers.Add(""Status"", ""500"")
+    msg.RespondMsg(&nats.Msg{{
+        Data:   errorEncoded,
+        Header: headers,
+    }})
 }} else {{
     {PlaceHolders.Error}
 }}
@@ -232,6 +243,7 @@ if err := {PlaceHolders.FunctionNameCamelCase}(); err != nil {{
         template = template.Replace(PlaceHolders.FunctionNameCamelCase, functionName.ToCamelCase());
         template = template.Replace(PlaceHolders.FunctionNamePascalCase, functionName.ToPascalCase());
         template = template.Replace(PlaceHolders.Error, "msg.Term()");
+        template = template.Replace(PlaceHolders.Namespace, @namespace);
         return template;
     }
     public string GetFunctionType()
@@ -240,15 +252,15 @@ if err := {PlaceHolders.FunctionNameCamelCase}(); err != nil {{
         {
             if ((functionType & FunctionTypes.REQUEST) == FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) == FunctionTypes.RESPONSE)
             {
-                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} {request!.ToPascalCase()}) {response!.ToPascalCase()}";
+                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} {request!.ToPascalCase()}) *{response!.ToPascalCase()}";
             }
             else if ((functionType & FunctionTypes.REQUEST) != FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) == FunctionTypes.RESPONSE)
             {
-                return @$"type {functionName.ToPascalCase()} func() {response!.ToPascalCase()}";
+                return @$"type {functionName.ToPascalCase()} func() *{response!.ToPascalCase()}";
             }
             else if ((functionType & FunctionTypes.REQUEST) == FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) != FunctionTypes.RESPONSE)
             {
-                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} {request!.ToPascalCase()})";
+                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} *{request!.ToPascalCase()})";
             }
             else if ((functionType & FunctionTypes.REQUEST) != FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) != FunctionTypes.RESPONSE)
             {
@@ -263,19 +275,19 @@ if err := {PlaceHolders.FunctionNameCamelCase}(); err != nil {{
         {
             if ((functionType & FunctionTypes.REQUEST) == FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) == FunctionTypes.RESPONSE)
             {
-                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} {request!.ToPascalCase()}) {response!.ToPascalCase()}, {error!.ToPascalCase()})";
+                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} {request!.ToPascalCase()}) (*{response!.ToPascalCase()}, *{error!.ToPascalCase()})";
             }
             else if ((functionType & FunctionTypes.REQUEST) != FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) == FunctionTypes.RESPONSE)
             {
-                return @$"type {functionName.ToPascalCase()} func() ({response!.ToPascalCase()}, {error!.ToPascalCase()})";
+                return @$"type {functionName.ToPascalCase()} func() ({response!.ToPascalCase()}, *{error!.ToPascalCase()})";
             }
             else if ((functionType & FunctionTypes.REQUEST) == FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) != FunctionTypes.RESPONSE)
             {
-                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} {request!.ToPascalCase()}) ({error!.ToPascalCase()})";
+                return @$"type {functionName.ToPascalCase()} func({request!.ToCamelCase()} {request!.ToPascalCase()}) *({error!.ToPascalCase()})";
             }
             else if ((functionType & FunctionTypes.REQUEST) != FunctionTypes.REQUEST && (functionType & FunctionTypes.RESPONSE) != FunctionTypes.RESPONSE)
             {
-                return @$"type {functionName.ToPascalCase()} func() ({error!.ToPascalCase()}";
+                return @$"type {functionName.ToPascalCase()} func() (*{error!.ToPascalCase()}";
             }
             else
             {

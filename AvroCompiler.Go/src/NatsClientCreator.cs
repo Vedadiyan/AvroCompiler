@@ -61,7 +61,7 @@ if errorCodecError != nil {{
                     string template =
 @$"
 return func({PlaceHolders.RequestNameCamelCase} {PlaceHolders.RequestNamePascalCase}) (*{PlaceHolders.ResponseNamePascalCase}, error) {{
-    if requestEncoded, requestEncodedError := requestCodec.BinaryFromNative(nil, {PlaceHolders.RequestNameCamelCase}); requestEncodedError == nil {{
+    if requestEncoded, requestEncodedError := requestCodec.BinaryFromNative(nil, {PlaceHolders.RequestNameCamelCase}.ToMap()); requestEncodedError == nil {{
         if response, error := conn.Request(""{PlaceHolders.Namespace}"", requestEncoded, time.Second * 10); error == nil {{
             if responseDecoded, _, responseDecodedError := responseCodec.NativeFromBinary(response.Data); responseDecodedError == nil {{
                 if response, ok := responseDecoded.({PlaceHolders.ResponseNamePascalCase}); ok {{
@@ -87,7 +87,7 @@ return func({PlaceHolders.RequestNameCamelCase} {PlaceHolders.RequestNamePascalC
                     string template =
 @$"
 return func({PlaceHolders.RequestNameCamelCase} {PlaceHolders.RequestNamePascalCase}) error {{
-    if requestEncoded, requestEncodedError := requestCodec.BinaryFromNative(nil, {PlaceHolders.RequestNameCamelCase}); requestEncodedError == nil {{
+    if requestEncoded, requestEncodedError := requestCodec.BinaryFromNative(nil, {PlaceHolders.RequestNameCamelCase}.ToMap()); requestEncodedError == nil {{
         return conn.Publish(""{PlaceHolders.Namespace}"", requestEncoded)
     }} else {{
         return requestEncodedError
@@ -103,8 +103,9 @@ return func({PlaceHolders.RequestNameCamelCase} {PlaceHolders.RequestNamePascalC
 return func({PlaceHolders.RequestNameCamelCase} {PlaceHolders.RequestNamePascalCase}) (*{PlaceHolders.ResponseNamePascalCase}, error) {{
     if response, error := conn.Request(""{PlaceHolders.Namespace}"", []byte {{}}, time.Second * 10); error == nil {{
         if responseDecoded, _, responseDecodedError := responseCodec.NativeFromBinary(response.Data); responseDecodedError == nil {{
-            if response, ok := responseDecoded.({PlaceHolders.ResponseNamePascalCase}); ok {{
-                return &response, nil
+            if response, ok := responseDecoded.(map[string]any); ok {{
+                _res := new{PlaceHolders.ResponseNamePascalCase}(response)
+                return &_res, nil
             }} else {{
                 return nil, errors.New(""Invalid message type"")
             }}
@@ -138,12 +139,13 @@ return func() error {{
                     string template =
 @$"
 return func({PlaceHolders.RequestNameCamelCase} {PlaceHolders.RequestNamePascalCase}) (*{PlaceHolders.ResponseNamePascalCase}, *{PlaceHolders.ErrorNamePascalCase}, error) {{
-    if requestEncoded, requestEncodedError := requestCodec.BinaryFromNative(nil, {PlaceHolders.RequestNameCamelCase}); requestEncodedError == nil {{
+    if requestEncoded, requestEncodedError := requestCodec.BinaryFromNative(nil, {PlaceHolders.RequestNameCamelCase}.ToMap()); requestEncodedError == nil {{
         if response, error := conn.Request(""{PlaceHolders.Namespace}"", requestEncoded, time.Second * 10); error == nil {{
             if response.Header.Get(""Status"") == ""200"" {{
                 if responseDecoded, _, responseDecodedError := responseCodec.NativeFromBinary(response.Data); responseDecodedError == nil {{
-                    if response, ok := responseDecoded.({PlaceHolders.ResponseNamePascalCase}); ok {{
-                        return &response, nil, nil
+                    if response, ok := responseDecoded.(map[string]any); ok {{
+                        _res := new{PlaceHolders.ResponseNamePascalCase}(response)
+                        return &_res, nil, nil
                     }} else {{
                         return nil, nil, errors.New(""Invalid message type"")
                     }}
@@ -152,8 +154,9 @@ return func({PlaceHolders.RequestNameCamelCase} {PlaceHolders.RequestNamePascalC
                 }}
             }} else {{
                 if errorDecoded, _, errorDecodedError := errorCodec.NativeFromBinary(response.Data); errorDecodedError == nil {{
-                    if error, ok := errorDecoded.({PlaceHolders.ErrorNamePascalCase}); ok {{
-                        return nil, &error, nil
+                    if error, ok := errorDecoded.(map[string]any); ok {{
+                        _res := new{PlaceHolders.ErrorNamePascalCase}(error)
+                        return nil, &_res, nil
                     }} else {{
                         return nil, nil, errors.New(""Invalid error type"")
                     }}
@@ -184,8 +187,9 @@ return func() (*{PlaceHolders.ResponseNamePascalCase}, *{PlaceHolders.ErrorNameP
    if response, error := conn.Request(""{PlaceHolders.Namespace}"", []byte {{}}, time.Second * 10); error == nil {{
         if response.Header.Get(""Status"") == ""200"" {{
             if responseDecoded, _, responseDecodedError := responseCodec.NativeFromBinary(response.Data); responseDecodedError == nil {{
-                if response, ok := responseDecoded.({PlaceHolders.ResponseNamePascalCase}); ok {{
-                    return &response, nil, nil
+                if response, ok := responseDecoded.(map[string]any); ok {{
+                    _res := new{PlaceHolders.ResponseNamePascalCase}(response)
+                    return &_res, nil, nil
                 }} else {{
                     return nil, nil, errors.New(""Invalid message type"")
                 }}
@@ -194,8 +198,9 @@ return func() (*{PlaceHolders.ResponseNamePascalCase}, *{PlaceHolders.ErrorNameP
             }}
         }} else {{
             if errorDecoded, _, errorDecodedError := errorCodec.NativeFromBinary(response.Data); errorDecodedError == nil {{
-                if error, ok := errorDecoded.({PlaceHolders.ErrorNamePascalCase}); ok {{
-                    return nil, &error, nil
+                if error, ok := errorDecoded.(map[string]any); ok {{
+                    _res := new{PlaceHolders.ErrorNamePascalCase}(error)
+                    return nil, &_res, nil
                 }} else {{
                     return nil, nil, errors.New(""Invalid error type"")
                 }}
@@ -271,6 +276,7 @@ return func() (*{PlaceHolders.ResponseNamePascalCase}, *{PlaceHolders.ErrorNameP
         template = template.Replace(PlaceHolders.ErrorCodec, "");
         template = template.Replace(PlaceHolders.FunctionNameCamelCase, functionName.ToCamelCase());
         template = template.Replace(PlaceHolders.FunctionNamePascalCase, functionName.ToPascalCase());
+        template = template.Replace(PlaceHolders.Namespace, @namespace);
         return template;
     }
     public string GetFunctionType()

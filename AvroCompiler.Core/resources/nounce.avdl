@@ -1,0 +1,32 @@
+@version("1.0.0")
+@namespace("org.apache.avro.test")
+protocol Nounce {
+
+    enum ErrorCodes {
+        InternalServerError
+    }
+    error ResponseError {
+        ErrorCodes errorCode;
+        string reason;
+    }
+    record Client {
+        string id;
+    }
+    record IssueNounceRequest {
+        Client client;
+        string username;
+    }
+    record IssueNounceResponse {
+        string nounce;
+    }
+    record GetNounceRequest {
+        Client client;
+        string username;
+    }
+    record GetNounceResponse {
+        string nounce;
+    }
+
+    IssueNounceResponse IssueNounce(IssueNounceRequest issueNounceRequest) throws ResponseError;
+    GetNounceResponse GetNounce(GetNounceRequest getNounceRequest) throws ResponseError;
+}

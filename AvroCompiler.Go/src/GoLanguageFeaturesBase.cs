@@ -7,13 +7,13 @@ using AvroCompiler.Core.Specifications;
 
 namespace AvroCompiler.Go;
 
-public class GoLanguageFeatures : ILanguageFeature
+public abstract class GoLanguageFeaturesBase : ILanguageFeature
 {
     private HashSet<string> types;
     private HashSet<string> codecList;
     private HashSet<string> codecs;
     private HashSet<string> protocols;
-    public GoLanguageFeatures()
+    public GoLanguageFeaturesBase()
     {
         types = new HashSet<string>();
         codecList = new HashSet<string>();
@@ -53,11 +53,11 @@ public class GoLanguageFeatures : ILanguageFeature
                 string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
                 if (elementType != AvroTypes.MAP)
                 {
-                    return @$"{name.ToPascalCase()} {dimensionBuilder.ToString()}{GetType(elementType)} `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""`";
+                    return @$"{name.ToPascalCase()} {dimensionBuilder.ToString()}{GetType(elementType)} `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}"" {parseValidations(properties, options)}`".TrimEnd();
                 }
                 else
                 {
-                    return @$"{name.ToPascalCase()} {dimensionBuilder.ToString()}map[{elementGenericType}]any `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""`";
+                    return @$"{name.ToPascalCase()} {dimensionBuilder.ToString()}map[{elementGenericType}]any `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}"" {parseValidations(properties, options)}`".TrimEnd();
                 }
             }
         }
@@ -84,7 +84,7 @@ public class GoLanguageFeatures : ILanguageFeature
             if (jsonPropertyNameProperty != null)
             {
                 string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
-                return @$"{name.ToPascalCase()} {dimensionBuilder.ToString()}{elementType} `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""`";
+                return @$"{name.ToPascalCase()} {dimensionBuilder.ToString()}{elementType} `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""`{parseValidations(properties, options)}`".TrimEnd();
             }
         }
         return $"{name.ToPascalCase()} {dimensionBuilder.ToString()}{elementType}";
@@ -156,7 +156,7 @@ public class GoLanguageFeatures : ILanguageFeature
             if (jsonPropertyNameProperty != null)
             {
                 string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
-                return @$"{name.ToPascalCase()} {GetType(type)} `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""`";
+                return @$"{name.ToPascalCase()} {GetType(type)} `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}"" {parseValidations(properties, options)}`".TrimEnd();
             }
         }
         return $"{name.ToPascalCase()} {GetType(type)}";
@@ -171,7 +171,7 @@ public class GoLanguageFeatures : ILanguageFeature
             if (jsonPropertyNameProperty != null)
             {
                 string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
-                return @$"{name.ToPascalCase()} {nullable(actualType)}{type.ToPascalCase()} `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""`";
+                return @$"{name.ToPascalCase()} {nullable(actualType)}{type.ToPascalCase()} `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}"" {parseValidations(properties, options)}`".TrimEnd();
             }
         }
         return $"{name.ToPascalCase()} {nullable(actualType)}{type.ToPascalCase()}";
@@ -210,7 +210,7 @@ public class GoLanguageFeatures : ILanguageFeature
             if (jsonPropertyNameProperty != null)
             {
                 string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
-                return @$"{name.ToPascalCase()} map[{GetType(elementType)}]any `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""`";
+                return @$"{name.ToPascalCase()} map[{GetType(elementType)}]any `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}"" {parseValidations(properties, options)}`".TrimEnd();
             }
         }
         return $"{name.ToPascalCase()} map[{GetType(elementType)}]any";
@@ -224,49 +224,12 @@ public class GoLanguageFeatures : ILanguageFeature
             if (jsonPropertyNameProperty != null)
             {
                 string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
-                return @$"{name.ToPascalCase()} map[{elementType}]any `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""`";
+                return @$"{name.ToPascalCase()} map[{elementType}]any `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}"" {parseValidations(properties, options)}`".TrimEnd();
             }
         }
         return $"{name.ToPascalCase()} map[{elementType}]any";
     }
-    public string GetMessage(string name, IReadOnlyDictionary<string, string> request, string response, object? options)
-    {
-        if (request.Count == 1)
-        {
-            PropertyInfo[]? _options = options?.GetType().GetProperties();
-            StringBuilder output = new StringBuilder();
-            if (response != "null" && Enum.TryParse<AvroTypes>(response.ToUpper(), out AvroTypes responseType))
-            {
-                return "";
-            }
-            string type = request[request.Keys.FirstOrDefault()!];
-            if (!Enum.TryParse<AvroTypes>(type.ToUpper(), out AvroTypes avroType))
-            {
-                object? error = _options?.FirstOrDefault(x => x.Name == "Error")?.GetValue(options);
-                NatsClientCreator natsClientCreator = new NatsClientCreator(name, "", type, response, error != null ? (string)error : null);
-                output.AppendLine();
-                output.AppendLine(natsClientCreator.GetFunctionType());
-                output.Append(natsClientCreator.GetFunction());
-            }
-            return output.ToString();
-        }
-        else if (request.Count == 0)
-        {
-            PropertyInfo[]? _options = options?.GetType().GetProperties();
-            StringBuilder output = new StringBuilder();
-            if (response != "null" && Enum.TryParse<AvroTypes>(response.ToUpper(), out AvroTypes responseType))
-            {
-                return "";
-            }
-            object? error = _options?.FirstOrDefault(x => x.Name == "Error")?.GetValue(options);
-            NatsClientCreator natsClientCreator = new NatsClientCreator(name, "", null, response, error != null ? (string)error : null);
-            output.AppendLine();
-            output.AppendLine(natsClientCreator.GetFunctionType());
-            output.AppendLine(natsClientCreator.GetFunction());
-            return output.ToString();
-        }
-        return "";
-    }
+    public abstract string GetMessage(string name, IReadOnlyDictionary<string, string> request, string response, object? options);
     public void RegisterProtocol(string protocol)
     {
         protocols.Add($"package {protocol}");
@@ -413,5 +376,16 @@ public class GoLanguageFeatures : ILanguageFeature
     {
         return string.Join("\r\n", codecs);
     }
-
+    private string parseValidations(PropertyInfo[] properties, object options)
+    {
+        PropertyInfo? validations = properties.FirstOrDefault(x => x.Name == "Validations");
+        object? value = validations?.GetValue(options);
+        if(value != null) {
+            List<string> values = ((List<string>)value);
+            if(values.Count > 0) {
+                return @$"validate:""{string.Join(",", values)}""";
+            }
+        }
+        return string.Empty;
+    }
 }

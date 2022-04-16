@@ -24,7 +24,8 @@ public class AvroArrayParser : IAvroParser<IEnumerable<AvroElement>>
         string? itemGenericType = null;
         if (IsArrayType(type, ref dimensions, ref arrayItemType, ref itemGenericType))
         {
-            yield return new AvroArray(name, dimensions, ShouldOr(arrayItemType, new ArgumentNullException(ExpectingArrayType(name))), itemGenericType, languageFeature);
+            Schema.Type _type = type.Deserialize<Schema.Type>()!;
+            yield return new AvroArray(name, dimensions, ShouldOr(arrayItemType, new ArgumentNullException(ExpectingArrayType(name))), itemGenericType, _type.Validations, languageFeature);
         }
     }
 }

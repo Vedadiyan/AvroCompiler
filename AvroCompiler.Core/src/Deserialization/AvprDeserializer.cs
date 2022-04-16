@@ -13,7 +13,9 @@ public class AvprDeserializer
     }
     public Root GetRoot()
     {
-        JsonDocument jsonDocument = JsonSerializer.Deserialize<JsonDocument>(jsonString)!;
+        JsonDocument jsonDocument = JsonSerializer.Deserialize<JsonDocument>(jsonString, new JsonSerializerOptions {
+            
+        })!;
         Root root = new Root();
         if (jsonDocument.RootElement.TryGetProperty("protocol", out JsonElement protocol))
         {

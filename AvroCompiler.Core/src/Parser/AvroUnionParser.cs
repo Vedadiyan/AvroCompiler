@@ -25,7 +25,7 @@ public class AvroUnionParser : IAvroParser<IEnumerable<AvroElement>>
         {
             if (IsUnionType(typeDefinition))
             {
-                yield return new AvroField(name, ShouldOr(typeDefinition.Deserialize<string[]>(), new ArgumentNullException()), languageFeature);
+                yield return new AvroField(name, ShouldOr(typeDefinition.Deserialize<string[]>(), new ArgumentNullException()), null, languageFeature);
             }
         }
         else
@@ -66,9 +66,10 @@ public class AvroUnionParser : IAvroParser<IEnumerable<AvroElement>>
                                     string? typeName = LogicalTypeNames.GetTypeNameFromLogicalType(ShouldOr(logicalType.GetString(), new ArgumentNullException()));
                                     if (HasValue(typeName))
                                     {
-                                       types.Add(MustNeverBeNull(typeName));
+                                        types.Add(MustNeverBeNull(typeName));
                                     }
-                                    else {
+                                    else
+                                    {
                                         throw new Exception("");
                                     }
                                 }
@@ -137,20 +138,20 @@ public class AvroUnionParser : IAvroParser<IEnumerable<AvroElement>>
                 {
                     if (types.Contains("MAP"))
                     {
-                        yield return new AvroMap(name, ShouldOr(itemGenericType, new ArgumentNullException()), languageFeature);
+                        yield return new AvroMap(name, ShouldOr(itemGenericType, new ArgumentNullException()), null, languageFeature);
                     }
                     else if (types.Contains("ARRAY"))
                     {
-                        yield return new AvroArray(name, dimensions, ShouldOr(itemType, new ArgumentNullException()), itemGenericType, languageFeature);
+                        yield return new AvroArray(name, dimensions, ShouldOr(itemType, new ArgumentNullException()), itemGenericType, null, languageFeature);
                     }
                     else
                     {
-                        yield return new AvroField(name, types.ToArray(), languageFeature);
+                        yield return new AvroField(name, types.ToArray(), null, languageFeature);
                     }
                 }
                 else
                 {
-                    yield return new AvroField(name, types.ToArray(), languageFeature);
+                    yield return new AvroField(name, types.ToArray(), null, languageFeature);
                 }
             }
         }
@@ -165,7 +166,7 @@ public class AvroUnionParser : IAvroParser<IEnumerable<AvroElement>>
                 uniqueTypes++;
             }
         }
-        return uniqueTypes >= 1;
+        return uniqueTypes > 1;
     }
     private List<string> MakeUnion(List<string> types)
     {

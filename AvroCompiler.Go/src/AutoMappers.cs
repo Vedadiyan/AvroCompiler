@@ -110,7 +110,7 @@ public class AutoMappers
             {
                 if (highOrderType == HighOrderType.RECORD)
                 {
-                    return getSetter(recordName, fieldName, "map[string]any", () => $"new{fieldName.ToPascalCase()}(value)");
+                    return getSetter(recordName, fieldName, "map[string]any", () => $"new{selectedType!.ToPascalCase()}(value)");
                 }
                 else
                 {
