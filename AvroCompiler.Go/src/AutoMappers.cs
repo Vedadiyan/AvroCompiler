@@ -183,7 +183,7 @@ public class AutoMappers
                 else
                 {
                     return @$"
-                        tmp{d}[index] = new{recordName.ToPascalCase()}(value)
+                        tmp{d}[index] = new{fieldItem.ToPascalCase()}(value)
                     ";
                 }
             }
@@ -193,7 +193,9 @@ public class AutoMappers
         {
             if (type != "map")
             {
-                string tmp = @$"
+                if (isPrimitiveType)
+                {
+                    string tmp = @$"
                     if value, ok := value[""{fieldName}""].([]any); ok {{
                         tmp{0} := make({getArrayDimensions(0)}{type}, len(value))
                         for index, value := range value {{
@@ -212,7 +214,31 @@ public class AutoMappers
                         }}).Warning(""Type Mismatch"")
                     }}
                 ";
-                output = output.Replace("$next", tmp);
+                    output = output.Replace("$next", tmp);
+                }
+                else
+                {
+                    string tmp = @$"
+                    if value, ok := value[""{fieldName}""].([]any); ok {{
+                        tmp{0} := make({getArrayDimensions(0)}{type}, len(value))
+                        for index, value := range value {{
+                            if value, ok := value.(map[string]any); ok {{
+                                {getAssignment(0)}
+                            }} else {{
+                                log.WithFields(log.Fields{{
+                                    ""Field Name"": ""{fieldName.ToPascalCase()}"",
+                                }}).Warning(""Type Mismatch"")
+                            }}
+                        }}
+                        {recordName.ToCamelCase()}.{fieldName.ToPascalCase()} = tmp{0}
+                    }} else {{
+                        log.WithFields(log.Fields{{
+                            ""Field Name"": ""{fieldName.ToPascalCase()}"",
+                        }}).Warning(""Type Mismatch"")
+                    }}
+                ";
+                    output = output.Replace("$next", tmp);
+                }
             }
             else
             {

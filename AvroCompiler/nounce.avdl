@@ -1,32 +1,72 @@
-@version("1.0.0")
-protocol Nounce {
-
+protocol Place {
+    
     import idl "client.avdl";
     import idl "error.avdl";
 
-    record GenerateReq {
+    enum Places {
+        AIRPORT,
+        CITY,
+        HOTEL,
+        ACTIVITY
+    }
+    record Place {
+        string id;
+        string name;
+    }
+    record PredictionReq {
         ClientInfo client;
-        @validations(["required"]) 
-        string username;
+        Places place;
+        string query;
     }
-    record GenerateRes {
-        int status;
-        string nounce;
+    record PredictionRes {
+        array<Place> places;
     }
-    record RetrieveReq {
+
+    record GeoCodeReq {
         ClientInfo client;
-        string username;
+        string placeId;
     }
-    record RetrieveRes {
-        int status;
-        string nounce;
+    record GeoCodeRes {
+        double lat;
+        double lon;
     }
+
+    record PhotoReq {
+        ClientInfo client;
+        string placeId;
+    }
+    record PhotoRes {
+        array<string> photos;
+    }
+
+    record Hotel {
+        string id;
+        string name;
+        double rate;
+    }
+    record HotelReq {
+        ClientInfo client;
+        double lat;
+        double lon;
+    }
+    record HotelRes {
+        array<int> hotels;
+    }
+
     @nats({
-        "namespace": "internal.nounce.generate"
+        "namespace": "internal.places.prediction"
     })
-    GenerateRes Generate(GenerateReq generateReq) throws ErrorRes;
-        @nats({
-        "namespace": "internal.nounce.retrieve"
+    PredictionRes Predictions(PredictionReq prectionReq) throws ErrorRes;
+    @nats({
+        "namespace": "internal.places.geocode"
     })
-    RetrieveRes Retrieve(RetrieveReq retrieveReq) throws ErrorRes;
+    GeoCodeRes GeoCodes(GeoCodeReq geoCodeReq) throws ErrorRes;
+    @nats({
+        "namespace": "internal.places.photo"
+    })
+    PhotoRes Photos(PhotoReq photoReq) throws ErrorRes;
+    @nats({
+        "namespace": "internal.places.hotel"
+    })
+    HotelRes Hotels(HotelReq hotelReq) throws ErrorRes;
 }

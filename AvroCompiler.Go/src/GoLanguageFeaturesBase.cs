@@ -84,7 +84,7 @@ public abstract class GoLanguageFeaturesBase : ILanguageFeature
             if (jsonPropertyNameProperty != null)
             {
                 string jsonPropertyName = (string)jsonPropertyNameProperty.GetValue(options)!;
-                return @$"{name.ToPascalCase()} {dimensionBuilder.ToString()}{elementType} `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""`{parseValidations(properties, options)}`".TrimEnd();
+                return @$"{name.ToPascalCase()} {dimensionBuilder.ToString()}{elementType} `avro:""{jsonPropertyName}"" json:""{jsonPropertyName}""{parseValidations(properties, options)}`".TrimEnd();
             }
         }
         return $"{name.ToPascalCase()} {dimensionBuilder.ToString()}{elementType}";
